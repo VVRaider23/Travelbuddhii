@@ -3,9 +3,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOpenAI } from "@/lib/openai";
-import { validatePlaces, buildPhotoUrl } from "@/lib/places";
+import { validatePlaces } from "@/lib/places";
 import { ItinerarySchema } from "@/types/ai";
-import { zodResponseFormat } from "openai/helpers/zod";
 
 export async function POST(
   _request: NextRequest,
@@ -70,34 +69,38 @@ export async function POST(
 
   let parsed;
   try {
-    const completion = await openai.chat.completions.parse({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are a meticulous Indian travel itinerary planner.
-Rules (all MUST be followed):
-- ASI monuments CLOSED Mondays — never schedule then
+          content: `You are a meticulous Indian travel itinerary planner. Return ONLY a JSON code block with no other text.
+Rules:
+- ASI monuments CLOSED Mondays
 - Road travel × 2.5 of Google estimate
 - Day 1: arrival + light activities only
-- Last day: checkout 11am standard
+- Last day: checkout 11am
 - Cluster geographically: all Day N activities within 30-min drive
 - Include veg AND non-veg meal options each day
 - Group size ${memberCount ?? 5}: group-compatible activities only
-- Budget: recommendations fit within ₹${trip.budget_max ?? 40000}/person (excl. transport to destination)
-- Include 2+ offbeat local experiences per day
-Return ONLY valid JSON matching the schema.`,
+- Budget: fit within ₹${trip.budget_max ?? 40000}/person
+
+JSON structure:
+{"days":[{"day_number":1,"theme":"...","area":"...","items":[{"place_name":"...","category":"activity|meal|transport|accommodation","start_time":"HH:MM or null","duration_minutes":60,"notes":"...","booking_platform":"makemytrip|irctc|redbus|zomato|direct|none|null","search_query":"... or null","is_offbeat":true,"how_to_get_there":"... or null"}]}]}`,
         },
         {
           role: "user",
-          content: `${days}-day itinerary for ${trip.destination}.
-Budget ₹${trip.budget_min ?? 20000}–${trip.budget_max ?? 40000}/person. Vibes: ${(trip.vibes ?? []).join(", ") || "adventure, nature"}. Dates: ${startDate ?? "flexible"}–${endDate ?? "flexible"}.
-Include: 1 accommodation/day, 3-5 activities, 2-3 meals, transport items between clusters.`,
+          content: `Generate a ${days}-day itinerary for ${trip.destination}. Budget ₹${trip.budget_min ?? 20000}–${trip.budget_max ?? 40000}/person. Vibes: ${(trip.vibes ?? []).join(", ") || "adventure, nature"}. Dates: ${startDate ?? "flexible"}–${endDate ?? "flexible"}. Include 1 accommodation, 3-4 activities, 2-3 meals, and transport items per day. Return all ${days} days.`,
         },
       ],
-      response_format: zodResponseFormat(ItinerarySchema, "itinerary"),
+      max_tokens: 4000,
     });
-    parsed = completion.choices[0].message.parsed;
+
+    const content = completion.choices[0].message.content ?? "";
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ?? content.match(/(\{[\s\S]*\})/);
+    if (!jsonMatch) throw new Error("No JSON in response");
+    parsed = ItinerarySchema.parse(JSON.parse(jsonMatch[1]));
+    console.log("GPT returned days:", parsed.days.length);
   } catch (err) {
     console.error("GPT error:", err);
     return NextResponse.json({ error: "AI generation failed. Try again." }, { status: 500 });
