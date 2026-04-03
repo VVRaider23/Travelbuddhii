@@ -79,7 +79,7 @@ export function ChatEditor({ slug, onItineraryUpdated, messages, onNewMessage }:
         <span>💬</span> Edit with AI
       </button>
 
-      <Drawer.Root open={open} onOpenChange={setOpen} modal={false} snapPoints={[0.45, 1]}>
+      <Drawer.Root open={open} onOpenChange={setOpen} modal={true} snapPoints={[1]}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
           <Drawer.Content className="bg-white flex flex-col fixed bottom-0 left-0 right-0 max-h-[96%] rounded-t-3xl z-50 shadow-xl">
