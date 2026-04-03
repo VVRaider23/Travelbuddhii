@@ -1,0 +1,223 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
+import { AddExpenseDrawer } from "@/components/expenses/AddExpenseDrawer";
+import { SettlementList } from "@/components/expenses/SettlementList";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { computeBalances, computeSettlements } from "@/lib/settlement";
+
+interface ExpenseSplit {
+  id: string;
+  user_id: string;
+  amount: number;
+  is_settled: boolean;
+}
+
+interface Expense {
+  id: string;
+  paid_by: string;
+  amount: number;
+  description: string;
+  category: string;
+  created_at: string;
+  expense_splits: ExpenseSplit[];
+}
+
+interface Member {
+  user_id: string;
+  role: string;
+  display_name?: string;
+  upi_id?: string;
+}
+
+const CATEGORY_ICONS: Record<string, string> = {
+  food: "🍽️",
+  transport: "🚗",
+  stay: "🏨",
+  activity: "🎯",
+  shopping: "🛍️",
+  other: "📦",
+};
+
+export default function ExpensesPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+
+  const [loading, setLoading] = useState(true);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [tab, setTab] = useState<"expenses" | "wrapup">("expenses");
+
+  const loadData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/trips/${slug}/expenses`);
+      const data = await res.json();
+      setExpenses(data.expenses ?? []);
+      setMembers(data.members ?? []);
+      setCurrentUserId(data.currentUserId ?? "");
+    } catch {
+      toast.error("Could not load expenses");
+    }
+    setLoading(false);
+  }, [slug]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const totalSpent = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const perPerson = members.length > 0 ? totalSpent / members.length : 0;
+
+  // Compute settlements
+  const splitMap = expenses.flatMap((e) =>
+    e.expense_splits.map((s) => ({
+      expense_id: e.id,
+      user_id: s.user_id,
+      amount: Number(s.amount),
+      is_settled: s.is_settled,
+    }))
+  );
+
+  const balances = computeBalances(
+    expenses.map((e) => ({ id: e.id, paid_by: e.paid_by, amount: Number(e.amount) })),
+    splitMap
+  );
+  const settlements = computeSettlements(balances);
+
+  function getMemberName(userId: string): string {
+    const m = members.find((m) => m.user_id === userId);
+    return m?.display_name ?? `User ${userId.slice(0, 6)}`;
+  }
+
+  if (loading) return <PageSkeleton />;
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <div className="bg-white px-4 pt-6 pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Expenses</h1>
+            <p className="text-sm text-gray-400 mt-0.5">
+              Total: ₹{totalSpent.toLocaleString("en-IN")}
+              {members.length > 0 && ` · ₹${Math.round(perPerson).toLocaleString("en-IN")}/person`}
+            </p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mt-3 bg-gray-100 rounded-xl p-1">
+          <button
+            onClick={() => setTab("expenses")}
+            className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              tab === "expenses" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"
+            }`}
+          >
+            Expenses
+          </button>
+          <button
+            onClick={() => setTab("wrapup")}
+            className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              tab === "wrapup" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"
+            }`}
+          >
+            Wrap-up
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 pb-24">
+        {tab === "expenses" ? (
+          expenses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="text-4xl mb-3">💸</div>
+              <p className="font-semibold text-gray-700">No expenses yet</p>
+              <p className="text-sm text-gray-400 mt-1">Add your first shared expense</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {expenses.map((expense) => (
+                <div key={expense.id} className="bg-white rounded-2xl p-4 border border-gray-100">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl">{CATEGORY_ICONS[expense.category] ?? "📦"}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{expense.description}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          paid by {getMemberName(expense.paid_by)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-base font-bold text-gray-900">
+                        ₹{Number(expense.amount).toLocaleString("en-IN")}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(expense.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Split preview */}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {expense.expense_splits.map((split) => (
+                      <span
+                        key={split.id}
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          split.is_settled ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-500"
+                        }`}
+                      >
+                        {getMemberName(split.user_id).split(" ")[0]}: ₹{Number(split.amount).toFixed(0)}
+                        {split.is_settled ? " ✓" : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Summary */}
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-sm text-gray-500">Total trip cost</p>
+              <p className="text-2xl font-bold text-gray-900 mt-0.5">
+                ₹{totalSpent.toLocaleString("en-IN")}
+              </p>
+              {members.length > 0 && (
+                <p className="text-sm text-gray-400 mt-0.5">
+                  ₹{Math.round(perPerson).toLocaleString("en-IN")} per person · {members.length} people
+                </p>
+              )}
+            </div>
+
+            {/* Settlements */}
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-3">
+                {settlements.length > 0
+                  ? `${settlements.length} transfer${settlements.length > 1 ? "s" : ""} to settle everything`
+                  : "All settled!"}
+              </p>
+              <SettlementList
+                settlements={settlements}
+                members={members}
+                currentUserId={currentUserId}
+                slug={slug}
+                onSettled={loadData}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FAB */}
+      <div className="fixed bottom-20 right-4 z-30">
+        <AddExpenseDrawer slug={slug} members={members} onAdded={loadData} />
+      </div>
+    </div>
+  );
+}
