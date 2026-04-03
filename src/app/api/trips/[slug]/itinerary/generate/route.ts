@@ -105,7 +105,6 @@ JSON structure:
     const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ?? content.match(/(\{[\s\S]*\})/);
     if (!jsonMatch) throw new Error("No JSON in response");
     parsed = ItinerarySchema.parse(JSON.parse(jsonMatch[1]));
-    console.log("GPT returned days:", parsed.days.length);
   } catch (err) {
     console.error("GPT error:", err);
     return NextResponse.json({ error: "AI generation failed. Try again." }, { status: 500 });
