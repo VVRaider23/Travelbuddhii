@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { toast } from "sonner";
@@ -22,6 +22,10 @@ export function DateLockButton({ slug, bestRanges, totalMembers, onLocked }: Pro
   const [selected, setSelected] = useState<DateRange | null>(bestRanges[0] ?? null);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    setSelected(bestRanges[0] ?? null);
+  }, [bestRanges]);
 
   if (bestRanges.length === 0) return null;
 
