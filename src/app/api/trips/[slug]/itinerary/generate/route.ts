@@ -7,7 +7,7 @@ import { validatePlaces } from "@/lib/places";
 import { ItinerarySchema } from "@/types/ai";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
@@ -63,6 +63,11 @@ export async function POST(
     const s = new Date(startDate);
     const e = new Date(endDate);
     days = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+  } else {
+    const body = await request.json().catch(() => ({}));
+    if (body.customDays && typeof body.customDays === "number") {
+      days = Math.min(10, Math.max(1, body.customDays));
+    }
   }
 
   const openai = getOpenAI();

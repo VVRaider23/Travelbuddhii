@@ -34,7 +34,7 @@ export const ItineraryItemSchema = z.object({
   place_name: z.string(),
   category: z.enum(["activity", "meal", "transport", "accommodation"]),
   start_time: z.string().nullable(),
-  duration_minutes: z.number().int(),
+  duration_minutes: z.number().int().nullable(),
   notes: z.string(),
   booking_platform: z
     .enum(["makemytrip", "irctc", "redbus", "zomato", "direct", "none"])

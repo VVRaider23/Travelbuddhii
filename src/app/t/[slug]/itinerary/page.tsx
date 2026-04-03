@@ -32,6 +32,7 @@ export default function ItineraryPage() {
   const [selectedDay, setSelectedDay] = useState(1);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [trip, setTrip] = useState<{ destination: string | null; confirmed_start: string | null; confirmed_end: string | null } | null>(null);
+  const [customDays, setCustomDays] = useState(3);
 
   const loadData = useCallback(async () => {
     try {
@@ -58,6 +59,8 @@ export default function ItineraryPage() {
     setGenerating(true);
     const res = await fetch(`/api/trips/${slug}/itinerary/generate`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customDays: trip?.confirmed_start ? undefined : customDays }),
     });
 
     const data = await res.json();
@@ -122,22 +125,45 @@ export default function ItineraryPage() {
           </div>
 
           {trip?.destination && (
-            <motion.button
-              onClick={handleGenerate}
-              disabled={generating}
-              whileTap={{ scale: 0.97 }}
-              className="w-full max-w-xs py-4 rounded-2xl text-white font-semibold text-base disabled:opacity-50"
-              style={{ backgroundColor: "#25D366" }}
-            >
-              {generating ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin inline-block">⟳</span>
-                  Building your plan...
-                </span>
-              ) : (
-                "✨ Generate Itinerary (AI)"
+            <div className="w-full max-w-xs flex flex-col gap-3">
+              {!trip.confirmed_start && (
+                <div className="bg-gray-50 rounded-2xl p-4">
+                  <p className="text-sm font-medium text-gray-700 mb-3 text-center">How many days?</p>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setCustomDays((d) => Math.max(1, d - 1))}
+                      className="w-10 h-10 rounded-full bg-white border border-gray-200 text-lg font-bold text-gray-600"
+                    >−</button>
+                    <span className="text-2xl font-bold text-gray-900 w-8 text-center">{customDays}</span>
+                    <button
+                      onClick={() => setCustomDays((d) => Math.min(10, d + 1))}
+                      className="w-10 h-10 rounded-full bg-white border border-gray-200 text-lg font-bold text-gray-600"
+                    >+</button>
+                  </div>
+                </div>
               )}
-            </motion.button>
+              {trip.confirmed_start && (
+                <p className="text-xs text-center text-gray-400">
+                  Using your confirmed trip dates
+                </p>
+              )}
+              <motion.button
+                onClick={handleGenerate}
+                disabled={generating}
+                whileTap={{ scale: 0.97 }}
+                className="w-full py-4 rounded-2xl text-white font-semibold text-base disabled:opacity-50"
+                style={{ backgroundColor: "#25D366" }}
+              >
+                {generating ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin inline-block">⟳</span>
+                    Building your plan...
+                  </span>
+                ) : (
+                  "✨ Generate Itinerary (AI)"
+                )}
+              </motion.button>
+            </div>
           )}
         </div>
       )}
