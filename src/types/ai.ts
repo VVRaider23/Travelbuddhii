@@ -33,15 +33,15 @@ export type TravelOption = z.infer<typeof TravelOptionSchema>;
 export const ItineraryItemSchema = z.object({
   place_name: z.string(),
   category: z.enum(["activity", "meal", "transport", "accommodation"]),
-  start_time: z.string().optional(),
+  start_time: z.string().nullable(),
   duration_minutes: z.number().int().min(15).max(480),
   notes: z.string().max(400),
   booking_platform: z
     .enum(["makemytrip", "irctc", "redbus", "zomato", "direct", "none"])
-    .optional(),
-  search_query: z.string().optional(),
-  is_offbeat: z.boolean().optional(),
-  how_to_get_there: z.string().optional(),
+    .nullable(),
+  search_query: z.string().nullable(),
+  is_offbeat: z.boolean().nullable(),
+  how_to_get_there: z.string().nullable(),
 });
 
 export const ItineraryDaySchema = z.object({
