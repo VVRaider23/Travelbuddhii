@@ -11,17 +11,17 @@ export const TravelOptionSchema = z.object({
 export const DestinationSuggestionItemSchema = z.object({
   name: z.string(),
   state: z.string(),
-  pitch: z.string().max(300),
+  pitch: z.string(),
   estimated_cost_min: z.number().int(),
   estimated_cost_max: z.number().int(),
-  pros: z.array(z.string()).min(2).max(4),
-  cons: z.array(z.string()).min(1).max(3),
-  travel_options: z.array(TravelOptionSchema).min(1).max(3),
-  why_fits_group: z.string().max(200),
+  pros: z.array(z.string()),
+  cons: z.array(z.string()),
+  travel_options: z.array(TravelOptionSchema),
+  why_fits_group: z.string(),
 });
 
 export const DestinationSuggestionSchema = z.object({
-  destinations: z.array(DestinationSuggestionItemSchema).min(3).max(5),
+  destinations: z.array(DestinationSuggestionItemSchema),
 });
 
 export type DestinationSuggestion = z.infer<typeof DestinationSuggestionSchema>;
@@ -34,8 +34,8 @@ export const ItineraryItemSchema = z.object({
   place_name: z.string(),
   category: z.enum(["activity", "meal", "transport", "accommodation"]),
   start_time: z.string().nullable(),
-  duration_minutes: z.number().int().min(15).max(480),
-  notes: z.string().max(400),
+  duration_minutes: z.number().int(),
+  notes: z.string(),
   booking_platform: z
     .enum(["makemytrip", "irctc", "redbus", "zomato", "direct", "none"])
     .nullable(),
@@ -45,14 +45,14 @@ export const ItineraryItemSchema = z.object({
 });
 
 export const ItineraryDaySchema = z.object({
-  day_number: z.number().int().min(1),
+  day_number: z.number().int(),
   theme: z.string(),
   area: z.string(),
-  items: z.array(ItineraryItemSchema).min(3).max(8),
+  items: z.array(ItineraryItemSchema),
 });
 
 export const ItinerarySchema = z.object({
-  days: z.array(ItineraryDaySchema).min(1).max(14),
+  days: z.array(ItineraryDaySchema),
 });
 
 export type Itinerary = z.infer<typeof ItinerarySchema>;
