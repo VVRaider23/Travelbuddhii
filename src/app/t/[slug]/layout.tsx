@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TripStoreProvider } from "@/components/layout/TripStoreProvider";
 import { TripNav } from "@/components/layout/TripNav";
+import { TripHeader } from "@/components/layout/TripHeader";
 
 interface Props {
   children: React.ReactNode;
@@ -61,7 +62,8 @@ export default async function TripLayout({ children, params }: Props) {
       members={members}
     >
       <div className="flex flex-col min-h-screen bg-gray-50">
-        <main className="flex-1 pb-20">{children}</main>
+        <TripHeader />
+        <main className="flex-1 pt-12 pb-20">{children}</main>
         <TripNav slug={slug} />
       </div>
     </TripStoreProvider>
