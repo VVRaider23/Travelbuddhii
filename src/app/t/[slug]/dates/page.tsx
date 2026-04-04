@@ -231,16 +231,24 @@ export default function DatesPage() {
   return (
     <div className="flex flex-col gap-4 pb-6">
       {/* Header */}
-      <div className="bg-white px-4 pt-6 pb-4 border-b border-gray-100">
+      <div
+        className="px-4 pt-6 pb-4"
+        style={{ background: "rgba(255,255,255,0.9)", borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+      >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">When can everyone go?</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <h1 className="text-[20px] font-bold" style={{ color: "var(--tb-text)" }}>
+              When can everyone go?
+            </h1>
+            <p className="text-[13px] mt-0.5" style={{ color: "var(--tb-light)" }}>
               {format(windowStart, "d MMM")} – {format(windowEnd, "d MMM yyyy")} window
             </p>
           </div>
           {isLocked && (
-            <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
+            <span
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(37,211,102,0.1)", color: "#25D366" }}
+            >
               Locked ✓
             </span>
           )}
@@ -249,10 +257,17 @@ export default function DatesPage() {
         {userRole === "organizer" && !isLocked && (
           <button
             onClick={handleToggleAnonymous}
-            className="mt-3 flex items-center gap-2 text-sm text-gray-500"
+            className="mt-3 flex items-center gap-2 text-[13px]"
+            style={{ color: "var(--tb-muted)" }}
           >
-            <div className={`w-9 h-5 rounded-full transition-colors relative ${isAnonymous ? "bg-orange-400" : "bg-gray-200"}`}>
-              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isAnonymous ? "translate-x-4" : "translate-x-0.5"}`} />
+            <div
+              className="w-9 h-5 rounded-full transition-colors relative"
+              style={{ background: isAnonymous ? "var(--tb-orange)" : "rgba(0,0,0,0.12)" }}
+            >
+              <div
+                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                style={{ transform: isAnonymous ? "translateX(16px)" : "translateX(2px)" }}
+              />
             </div>
             <span>Anonymous mode</span>
           </button>
@@ -301,8 +316,11 @@ export default function DatesPage() {
             onClick={handleSave}
             disabled={saving || myDates.size === 0}
             whileTap={{ scale: 0.97 }}
-            className="w-full py-4 rounded-2xl text-white font-semibold text-base disabled:opacity-50 transition-all"
-            style={{ backgroundColor: "#25D366" }}
+            className="w-full py-4 rounded-[18px] text-white font-bold text-[16px] disabled:opacity-50 transition-all hover:-translate-y-0.5 disabled:translate-y-0"
+            style={{
+              background: "linear-gradient(135deg, #25D366 0%, #2EE07A 100%)",
+              boxShadow: "0 4px 16px rgba(37,211,102,0.25)",
+            }}
           >
             {saving
               ? "Saving..."

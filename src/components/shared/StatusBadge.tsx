@@ -1,18 +1,25 @@
 import type { TripStatus } from "@/types/database";
 
-const STATUS_CONFIG: Record<TripStatus, { label: string; className: string }> = {
-  gathering_inputs: { label: "Gathering inputs", className: "bg-blue-100 text-blue-700" },
-  voting: { label: "Voting", className: "bg-amber-100 text-amber-700" },
-  planning: { label: "Planning", className: "bg-purple-100 text-purple-700" },
-  active: { label: "Active trip", className: "bg-green-100 text-green-700" },
-  completed: { label: "Completed", className: "bg-gray-100 text-gray-600" },
+const STATUS_CONFIG: Record<TripStatus, { label: string; color: string; bg: string }> = {
+  gathering_inputs: { label: "Gathering", color: "#FF6B35", bg: "rgba(255,107,53,0.1)" },
+  voting:           { label: "Voting",    color: "#8B5CF6", bg: "rgba(139,92,246,0.1)" },
+  planning:         { label: "Planning",  color: "#00A8A8", bg: "rgba(0,168,168,0.1)"  },
+  active:           { label: "Active",    color: "#25D366", bg: "rgba(37,211,102,0.1)" },
+  completed:        { label: "Completed", color: "#9A9490", bg: "rgba(154,148,144,0.1)"},
 };
 
 export function StatusBadge({ status }: { status: TripStatus }) {
-  const config = STATUS_CONFIG[status];
+  const cfg = STATUS_CONFIG[status];
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
-      {config.label}
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+      style={{ color: cfg.color, background: cfg.bg }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full animate-pulseDot"
+        style={{ background: cfg.color }}
+      />
+      {cfg.label}
     </span>
   );
 }

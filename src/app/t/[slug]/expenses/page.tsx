@@ -95,13 +95,16 @@ export default function ExpensesPage() {
   if (loading) return <PageSkeleton />;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: "var(--tb-cream)" }}>
       {/* Header */}
-      <div className="bg-white px-4 pt-6 pb-3 border-b border-gray-100">
+      <div
+        className="px-4 pt-6 pb-3"
+        style={{ backgroundColor: "white", borderBottom: "1px solid var(--tb-sand)" }}
+      >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Expenses</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <h1 className="text-xl font-bold" style={{ color: "var(--tb-text)" }}>Expenses</h1>
+            <p className="text-sm mt-0.5" style={{ color: "var(--tb-muted)" }}>
               Total: ₹{totalSpent.toLocaleString("en-IN")}
               {members.length > 0 && ` · ₹${Math.round(perPerson).toLocaleString("en-IN")}/person`}
             </p>
@@ -109,20 +112,26 @@ export default function ExpensesPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mt-3 bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 mt-3 rounded-xl p-1" style={{ backgroundColor: "var(--tb-sand)" }}>
           <button
             onClick={() => setTab("expenses")}
-            className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              tab === "expenses" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"
-            }`}
+            className="flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={
+              tab === "expenses"
+                ? { backgroundColor: "white", color: "var(--tb-text)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }
+                : { color: "var(--tb-muted)" }
+            }
           >
             Expenses
           </button>
           <button
             onClick={() => setTab("wrapup")}
-            className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              tab === "wrapup" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"
-            }`}
+            className="flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={
+              tab === "wrapup"
+                ? { backgroundColor: "white", color: "var(--tb-text)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }
+                : { color: "var(--tb-muted)" }
+            }
           >
             Wrap-up
           </button>
@@ -135,28 +144,32 @@ export default function ExpensesPage() {
           expenses.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="text-4xl mb-3">💸</div>
-              <p className="font-semibold text-gray-700">No expenses yet</p>
-              <p className="text-sm text-gray-400 mt-1">Add your first shared expense</p>
+              <p className="font-semibold" style={{ color: "var(--tb-text)" }}>No expenses yet</p>
+              <p className="text-sm mt-1" style={{ color: "var(--tb-muted)" }}>Add your first shared expense</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
               {expenses.map((expense) => (
-                <div key={expense.id} className="bg-white rounded-2xl p-4 border border-gray-100">
+                <div
+                  key={expense.id}
+                  className="rounded-2xl p-4"
+                  style={{ backgroundColor: "white", border: "1px solid var(--tb-sand)" }}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2.5">
                       <span className="text-xl">{CATEGORY_ICONS[expense.category] ?? "📦"}</span>
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{expense.description}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-sm font-semibold" style={{ color: "var(--tb-text)" }}>{expense.description}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--tb-muted)" }}>
                           paid by {getMemberName(expense.paid_by)}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-base font-bold text-gray-900">
+                      <p className="text-base font-bold" style={{ color: "var(--tb-text)" }}>
                         ₹{Number(expense.amount).toLocaleString("en-IN")}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs" style={{ color: "var(--tb-light)" }}>
                         {new Date(expense.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                       </p>
                     </div>
@@ -167,9 +180,12 @@ export default function ExpensesPage() {
                     {expense.expense_splits.map((split) => (
                       <span
                         key={split.id}
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          split.is_settled ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-500"
-                        }`}
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={
+                          split.is_settled
+                            ? { backgroundColor: "rgba(0,168,168,0.1)", color: "var(--tb-teal-dark)" }
+                            : { backgroundColor: "var(--tb-cream)", color: "var(--tb-muted)" }
+                        }
                       >
                         {getMemberName(split.user_id).split(" ")[0]}: ₹{Number(split.amount).toFixed(0)}
                         {split.is_settled ? " ✓" : ""}
@@ -183,13 +199,16 @@ export default function ExpensesPage() {
         ) : (
           <div className="flex flex-col gap-4">
             {/* Summary */}
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-sm text-gray-500">Total trip cost</p>
-              <p className="text-2xl font-bold text-gray-900 mt-0.5">
+            <div
+              className="rounded-2xl p-4"
+              style={{ backgroundColor: "white", border: "1px solid var(--tb-sand)" }}
+            >
+              <p className="text-sm" style={{ color: "var(--tb-muted)" }}>Total trip cost</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: "var(--tb-text)" }}>
                 ₹{totalSpent.toLocaleString("en-IN")}
               </p>
               {members.length > 0 && (
-                <p className="text-sm text-gray-400 mt-0.5">
+                <p className="text-sm mt-0.5" style={{ color: "var(--tb-muted)" }}>
                   ₹{Math.round(perPerson).toLocaleString("en-IN")} per person · {members.length} people
                 </p>
               )}
@@ -197,7 +216,7 @@ export default function ExpensesPage() {
 
             {/* Settlements */}
             <div>
-              <p className="text-sm font-semibold text-gray-800 mb-3">
+              <p className="text-sm font-semibold mb-3" style={{ color: "var(--tb-text)" }}>
                 {settlements.length > 0
                   ? `${settlements.length} transfer${settlements.length > 1 ? "s" : ""} to settle everything`
                   : "All settled!"}

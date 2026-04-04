@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const TABS = [
   { label: "Dates", icon: "🗓️", path: "dates" },
@@ -13,11 +14,20 @@ const TABS = [
 
 export function TripNav({ slug }: { slug: string }) {
   const pathname = usePathname();
+  const [hovered, setHovered] = useState(-1);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-pb z-40">
+    <nav
+      className="fixed bottom-0 left-0 right-0 safe-area-pb z-40"
+      style={{
+        background: "rgba(255,255,255,0.95)",
+        borderTop: "1px solid rgba(0,0,0,0.05)",
+        backdropFilter: "blur(16px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
       <div className="flex">
-        {TABS.map((tab) => {
+        {TABS.map((tab, i) => {
           const href = `/t/${slug}/${tab.path}`;
           const isActive = pathname === href;
 
@@ -25,17 +35,36 @@ export function TripNav({ slug }: { slug: string }) {
             <Link
               key={tab.path}
               href={href}
-              className={`flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] gap-0.5 transition-colors ${
-                isActive ? "text-orange-500" : "text-gray-400"
-              }`}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(-1)}
+              className="flex-1 flex flex-col items-center justify-center relative"
+              style={{ minHeight: 56, padding: "8px 0 6px", gap: 3, transition: "all 0.2s ease" }}
             >
-              <span className="text-xl leading-none">{tab.icon}</span>
-              <span className={`text-[10px] font-medium ${isActive ? "text-orange-500" : "text-gray-400"}`}>
+              {isActive && (
+                <div
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-[3px] rounded-b-[4px]"
+                  style={{ background: "linear-gradient(90deg, var(--tb-orange), var(--tb-orange-light))" }}
+                />
+              )}
+              <div
+                className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center text-[19px]"
+                style={{
+                  background: isActive ? "rgba(255,107,53,0.1)" : "transparent",
+                  transform: isActive || hovered === i ? "scale(1.08)" : "scale(1)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {tab.icon}
+              </div>
+              <span
+                className="text-[10px]"
+                style={{
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? "var(--tb-orange)" : "var(--tb-light)",
+                }}
+              >
                 {tab.label}
               </span>
-              {isActive && (
-                <span className="absolute bottom-0 w-6 h-0.5 bg-orange-500 rounded-t-full" />
-              )}
             </Link>
           );
         })}

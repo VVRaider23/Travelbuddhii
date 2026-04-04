@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { format, parseISO, addDays, differenceInDays } from "date-fns";
+import { format, parseISO, differenceInDays } from "date-fns";
 
 interface Member {
   user_id: string;
@@ -53,6 +53,8 @@ function findBestRanges(heatmap: Record<string, number>, minCount: number): Date
   return ranges.sort((a, b) => b.count - a.count).slice(0, 3);
 }
 
+const RANK_ICONS = ["🏆", "🥈", "🥉"];
+
 export function BestDatesSummary({ heatmap, totalMembers, members, votedUserIds, currentUserId }: Props) {
   const nonVoters = members.filter((m) => !votedUserIds.has(m.user_id) && m.user_id !== currentUserId);
   const voterCount = votedUserIds.size;
@@ -70,35 +72,73 @@ export function BestDatesSummary({ heatmap, totalMembers, members, votedUserIds,
   }
 
   return (
-    <div className="mx-4 bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+    <div
+      className="mx-4 rounded-[18px] p-4 flex flex-col gap-3"
+      style={{
+        background: "rgba(255,255,255,0.95)",
+        border: "1px solid rgba(0,0,0,0.04)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+      }}
+    >
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-gray-800">Availability summary</p>
-        <p className="text-xs text-gray-400">{voterCount}/{totalMembers} responded</p>
+        <p className="text-[14px] font-semibold" style={{ color: "var(--tb-text)" }}>
+          Availability summary
+        </p>
+        <span
+          className="text-[11px] font-medium px-2.5 py-1 rounded-full"
+          style={{ background: "rgba(255,107,53,0.08)", color: "var(--tb-orange)" }}
+        >
+          {voterCount}/{totalMembers} responded
+        </span>
       </div>
 
       {bestRanges.length > 0 ? (
         <div className="flex flex-col gap-2">
           {bestRanges.map((r, i) => (
-            <div key={r.start} className="flex items-center gap-2">
-              {i === 0 && <span className="text-sm">🏆</span>}
-              {i === 1 && <span className="text-sm">🥈</span>}
-              {i === 2 && <span className="text-sm">🥉</span>}
+            <div
+              key={r.start}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[12px]"
+              style={{
+                background: i === 0 ? "rgba(255,107,53,0.05)" : "rgba(0,0,0,0.02)",
+                border: `1px solid ${i === 0 ? "rgba(255,107,53,0.12)" : "rgba(0,0,0,0.04)"}`,
+              }}
+            >
+              <span className="text-base shrink-0">{RANK_ICONS[i]}</span>
               <div className="flex-1">
-                <span className="text-sm font-medium text-gray-900">{formatRange(r)}</span>
-                <span className="text-xs text-gray-400 ml-2">works for {r.count}/{totalMembers}</span>
+                <span className="text-[14px] font-semibold" style={{ color: "var(--tb-text)" }}>
+                  {formatRange(r)}
+                </span>
+                <span className="text-[12px] ml-2" style={{ color: "var(--tb-light)" }}>
+                  works for {r.count}/{totalMembers}
+                </span>
               </div>
+              {i === 0 && r.count === totalMembers && (
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                  style={{ background: "rgba(37,211,102,0.1)", color: "#25D366" }}
+                >
+                  Everyone ✓
+                </span>
+              )}
             </div>
           ))}
         </div>
       ) : voterCount < 2 ? (
-        <p className="text-sm text-gray-400">Waiting for more votes to show overlap...</p>
+        <p className="text-[13px]" style={{ color: "var(--tb-light)" }}>
+          Waiting for more votes to show overlap...
+        </p>
       ) : (
-        <p className="text-sm text-gray-400">No dates work for 50%+ yet. Widen the window?</p>
+        <p className="text-[13px]" style={{ color: "var(--tb-light)" }}>
+          No dates work for 50%+ yet. Widen the window?
+        </p>
       )}
 
       {nonVoters.length > 0 && (
-        <p className="text-xs text-amber-600">
-          {nonVoters.length} {nonVoters.length === 1 ? "person hasn't" : "people haven't"} voted yet
+        <p
+          className="text-[12px] font-medium px-3 py-2 rounded-[10px]"
+          style={{ background: "rgba(245,158,11,0.08)", color: "#D97706" }}
+        >
+          ⏳ {nonVoters.length} {nonVoters.length === 1 ? "person hasn't" : "people haven't"} voted yet
         </p>
       )}
     </div>

@@ -99,9 +99,12 @@ export function RankedChoiceVoting({ destinations, initialRanking, onSubmit, sub
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="px-4 bg-amber-50 rounded-2xl mx-4 py-3">
-        <p className="text-sm text-amber-800 font-medium">Drag to rank your preferences</p>
-        <p className="text-xs text-amber-600 mt-0.5">Top = most preferred</p>
+      <div
+        className="px-4 rounded-2xl mx-4 py-3"
+        style={{ backgroundColor: "var(--tb-cream)" }}
+      >
+        <p className="text-sm font-medium" style={{ color: "var(--tb-orange-dark)" }}>Drag to rank your preferences</p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--tb-muted)" }}>Top = most preferred</p>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -119,7 +122,7 @@ export function RankedChoiceVoting({ destinations, initialRanking, onSubmit, sub
           onClick={() => onSubmit(ordering)}
           disabled={submitting}
           className="w-full py-4 rounded-2xl text-white font-semibold text-base disabled:opacity-50"
-          style={{ backgroundColor: "#25D366" }}
+          style={{ background: "linear-gradient(135deg, var(--tb-orange), var(--tb-orange-dark))" }}
         >
           {submitting ? "Submitting..." : "Submit my ranking →"}
         </button>

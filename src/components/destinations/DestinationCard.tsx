@@ -49,12 +49,19 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
   return (
     <motion.div
       layout
-      className={`bg-white rounded-2xl overflow-hidden border transition-shadow ${
-        isDragging ? "shadow-xl scale-105" : "border-gray-100 shadow-sm"
+      className={`rounded-2xl overflow-hidden transition-shadow ${
+        isDragging ? "shadow-xl scale-105" : "shadow-sm"
       }`}
+      style={{
+        backgroundColor: "white",
+        border: isDragging ? "2px solid var(--tb-orange)" : "1px solid var(--tb-sand)",
+      }}
     >
       {/* Photo hero */}
-      <div className="relative h-44 bg-gradient-to-br from-orange-100 to-amber-200">
+      <div
+        className="relative h-44"
+        style={{ background: "linear-gradient(135deg, var(--tb-orange-light), var(--tb-teal-light))" }}
+      >
         {dest.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -79,14 +86,17 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
                 <div {...dragHandleProps} className="text-white/60 cursor-grab active:cursor-grabbing px-1">
                   ⋮⋮
                 </div>
-                <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold text-sm">
+                <div
+                  className="w-7 h-7 rounded-full backdrop-blur flex items-center justify-center text-white font-bold text-sm"
+                  style={{ backgroundColor: "var(--tb-orange)", opacity: 0.9 }}
+                >
                   {rank}
                 </div>
               </div>
             )}
           </div>
           {dest.estimated_cost_min && dest.estimated_cost_max && (
-            <p className="text-sm text-green-300 font-semibold mt-0.5">
+            <p className="text-sm font-semibold mt-0.5" style={{ color: "var(--tb-teal-light)" }}>
               {formatINR(dest.estimated_cost_min)}–{formatINR(dest.estimated_cost_max)}/person
             </p>
           )}
@@ -96,23 +106,27 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
       {/* Content */}
       <div className="p-4 flex flex-col gap-3">
         {/* Pitch */}
-        <p className="text-sm text-gray-600 italic leading-relaxed">{dest.pitch}</p>
+        <p className="text-sm italic leading-relaxed" style={{ color: "var(--tb-muted)" }}>{dest.pitch}</p>
 
         {/* Why fits group */}
         {dest.why_fits_group && (
-          <div className="bg-amber-50 rounded-xl px-3 py-2.5 flex gap-2">
+          <div
+            className="rounded-xl px-3 py-2.5 flex gap-2"
+            style={{ backgroundColor: "var(--tb-cream)" }}
+          >
             <span className="text-base shrink-0">✨</span>
-            <p className="text-xs text-amber-800 leading-relaxed">{dest.why_fits_group}</p>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--tb-text)" }}>{dest.why_fits_group}</p>
           </div>
         )}
 
         {/* Pros & cons */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center justify-between text-sm text-gray-500"
+          className="flex items-center justify-between text-sm"
+          style={{ color: "var(--tb-muted)" }}
         >
           <span>Details</span>
-          <span className="text-gray-400">{expanded ? "▲" : "▼"}</span>
+          <span style={{ color: "var(--tb-light)" }}>{expanded ? "▲" : "▼"}</span>
         </button>
 
         <AnimatePresence>
@@ -128,7 +142,11 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
                 {dest.pros.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {dest.pros.map((p) => (
-                      <span key={p} className="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full">
+                      <span
+                        key={p}
+                        className="text-xs px-2.5 py-1 rounded-full"
+                        style={{ backgroundColor: "rgba(0,168,168,0.1)", color: "var(--tb-teal-dark)" }}
+                      >
                         ✓ {p}
                       </span>
                     ))}
@@ -139,7 +157,11 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
                 {dest.cons.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {dest.cons.map((c) => (
-                      <span key={c} className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full">
+                      <span
+                        key={c}
+                        className="text-xs px-2.5 py-1 rounded-full"
+                        style={{ backgroundColor: "var(--tb-sand)", color: "var(--tb-text)" }}
+                      >
                         ⚠ {c}
                       </span>
                     ))}
@@ -150,10 +172,14 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
                 {dest.travel_options && dest.travel_options.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {dest.travel_options.map((t) => (
-                      <div key={t.mode} className="flex items-center gap-1 text-xs bg-gray-50 px-2.5 py-1.5 rounded-full border border-gray-100">
+                      <div
+                        key={t.mode}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
+                        style={{ backgroundColor: "var(--tb-cream)", border: "1px solid var(--tb-sand)", color: "var(--tb-muted)" }}
+                      >
                         <span>{MODE_ICONS[t.mode] ?? "🚀"}</span>
-                        <span className="text-gray-600 capitalize">{t.mode}</span>
-                        <span className="text-gray-400">{t.duration_hours}h</span>
+                        <span className="capitalize">{t.mode}</span>
+                        <span style={{ color: "var(--tb-light)" }}>{t.duration_hours}h</span>
                       </div>
                     ))}
                   </div>
