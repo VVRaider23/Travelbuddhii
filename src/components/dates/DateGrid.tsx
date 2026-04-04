@@ -1,16 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { addDays, format, eachDayOfInterval, isSameMonth, startOfMonth, endOfMonth, getDay } from "date-fns";
+import { format, eachDayOfInterval, getDay } from "date-fns";
 
 interface Props {
   windowStart: Date;
   windowEnd: Date;
-  myDates: Set<string>;          // dates user selected (yyyy-MM-dd)
-  heatmap: Record<string, number>;  // date → count of people available
+  myDates: Set<string>;
+  heatmap: Record<string, number>;
   totalMembers: number;
   isAnonymous: boolean;
-  pulsingDates: Set<string>;     // dates to show pulse animation (from broadcast)
+  pulsingDates: Set<string>;
   onToggle: (date: string) => void;
 }
 
@@ -38,30 +38,47 @@ export function DateGrid({
     months[months.length - 1].days.push(day);
   }
 
-  function getIntensityClass(count: number): string {
-    if (count === 0) return "bg-gray-100";
+  function getHeatmapStyle(count: number, isSelected: boolean): React.CSSProperties {
+    if (isSelected) {
+      return {
+        background: "linear-gradient(135deg, var(--tb-orange), var(--tb-orange-light))",
+        color: "#fff",
+        fontWeight: 700,
+        boxShadow: "0 2px 8px rgba(255,107,53,0.3)",
+      };
+    }
+    if (count === 0) return { background: "rgba(0,0,0,0.025)", color: "var(--tb-muted)" };
     const pct = count / totalMembers;
-    if (pct >= 1) return "bg-green-500";
-    if (pct >= 0.75) return "bg-green-400";
-    if (pct >= 0.5) return "bg-amber-400";
-    if (pct >= 0.25) return "bg-amber-200";
-    return "bg-orange-100";
+    if (pct >= 1) return { background: "rgba(37,211,102,0.85)", color: "#fff" };
+    if (pct >= 0.75) return { background: "rgba(37,211,102,0.6)", color: "var(--tb-text)" };
+    if (pct >= 0.5) return { background: "rgba(255,193,7,0.55)", color: "var(--tb-text)" };
+    if (pct >= 0.25) return { background: "rgba(255,107,53,0.25)", color: "var(--tb-text)" };
+    return { background: "rgba(255,107,53,0.1)", color: "var(--tb-muted)" };
   }
 
   return (
     <div className="flex flex-col gap-6">
       {months.map((month) => {
-        // Compute leading blank cells for day-of-week alignment
         const firstDay = month.days[0];
-        const leadingBlanks = getDay(firstDay); // 0=Sun
+        const leadingBlanks = getDay(firstDay);
 
         return (
-          <div key={month.label}>
-            <p className="text-sm font-semibold text-gray-600 px-4 mb-3">{month.label}</p>
-            <div className="px-4 grid grid-cols-7 gap-1.5">
+          <div key={month.label} className="px-4">
+            <p
+              className="text-[13px] font-semibold mb-3"
+              style={{ color: "var(--tb-text)" }}
+            >
+              {month.label}
+            </p>
+
+            <div className="grid grid-cols-7 gap-1.5">
               {/* Day headers */}
-              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div key={i} className="text-center text-[10px] text-gray-400 font-medium pb-1">
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
+                <div
+                  key={i}
+                  className="text-center text-[10px] font-semibold uppercase tracking-wider pb-1"
+                  style={{ color: "var(--tb-light)" }}
+                >
                   {d}
                 </div>
               ))}
@@ -77,27 +94,23 @@ export function DateGrid({
                 const count = heatmap[dateStr] ?? 0;
                 const isSelected = myDates.has(dateStr);
                 const isPulsing = pulsingDates.has(dateStr);
+                const cellStyle = getHeatmapStyle(count, isSelected);
 
                 return (
                   <motion.button
                     key={dateStr}
                     onClick={() => onToggle(dateStr)}
-                    animate={isPulsing ? { scale: [1, 1.15, 1] } : {}}
+                    animate={isPulsing ? { scale: [1, 1.18, 1] } : {}}
                     transition={{ duration: 0.2 }}
-                    className={`
-                      relative aspect-square rounded-xl flex flex-col items-center justify-center
-                      min-h-[44px] text-xs font-medium transition-all active:scale-95
-                      ${isSelected
-                        ? "ring-2 ring-green-500 ring-offset-1"
-                        : "ring-0"
-                      }
-                      ${count > 0 && !isSelected ? getIntensityClass(count) : ""}
-                      ${isSelected ? "bg-green-500 text-white" : count === 0 ? "bg-gray-100 text-gray-700" : "text-gray-800"}
-                    `}
+                    className="relative aspect-square rounded-[12px] flex flex-col items-center justify-center min-h-[44px] text-[13px] transition-all active:scale-95"
+                    style={cellStyle}
                   >
-                    <span>{format(day, "d")}</span>
+                    <span className="font-medium">{format(day, "d")}</span>
                     {!isAnonymous && count > 0 && (
-                      <span className={`text-[9px] mt-0.5 ${isSelected ? "text-green-100" : "text-gray-500"}`}>
+                      <span
+                        className="text-[9px] mt-0.5"
+                        style={{ opacity: isSelected ? 0.7 : 0.65 }}
+                      >
                         {count}/{totalMembers}
                       </span>
                     )}

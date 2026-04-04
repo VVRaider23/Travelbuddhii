@@ -3,14 +3,14 @@
 import { motion } from "framer-motion";
 
 export const VIBES = [
-  { id: "beach", label: "Beach", emoji: "🏖️" },
-  { id: "mountains", label: "Mountains", emoji: "⛰️" },
-  { id: "nightlife", label: "Nightlife", emoji: "🎉" },
-  { id: "culture", label: "Culture", emoji: "🏛️" },
-  { id: "adventure", label: "Adventure", emoji: "🧗" },
-  { id: "chill", label: "Chill", emoji: "😴" },
-  { id: "food", label: "Food", emoji: "🍜" },
-  { id: "nature", label: "Nature", emoji: "🌿" },
+  { id: "beach",     label: "Beach",     emoji: "🏖️", color: "#FF6B35" },
+  { id: "mountains", label: "Mountains", emoji: "⛰️", color: "#00A8A8" },
+  { id: "nightlife", label: "Nightlife", emoji: "🎉", color: "#8B5CF6" },
+  { id: "culture",   label: "Culture",   emoji: "🏛️", color: "#EC4899" },
+  { id: "adventure", label: "Adventure", emoji: "🧗", color: "#F59E0B" },
+  { id: "chill",     label: "Chill",     emoji: "😴", color: "#10B981" },
+  { id: "food",      label: "Food",      emoji: "🍜", color: "#EF4444" },
+  { id: "nature",    label: "Nature",    emoji: "🌿", color: "#22C55E" },
 ];
 
 interface Props {
@@ -36,13 +36,13 @@ export function VibeChips({ selected, onChange }: Props) {
             key={vibe.id}
             onClick={() => toggle(vibe.id)}
             whileTap={{ scale: 0.92 }}
-            className={`
-              flex items-center gap-1.5 px-4 h-10 rounded-full text-sm font-medium transition-colors
-              ${isSelected
-                ? "bg-orange-500 text-white"
-                : "bg-orange-50 text-orange-700 border border-orange-100"
-              }
-            `}
+            className="flex items-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-medium transition-all"
+            style={{
+              background: isSelected ? vibe.color : `${vibe.color}0F`,
+              color: isSelected ? "#fff" : vibe.color,
+              border: `1.5px solid ${isSelected ? vibe.color : `${vibe.color}25`}`,
+              boxShadow: isSelected ? `0 2px 8px ${vibe.color}30` : "none",
+            }}
           >
             <span>{vibe.emoji}</span>
             <span>{vibe.label}</span>

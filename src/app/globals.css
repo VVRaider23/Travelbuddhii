@@ -5,6 +5,20 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-tb-orange: var(--tb-orange);
+  --color-tb-orange-light: var(--tb-orange-light);
+  --color-tb-orange-dark: var(--tb-orange-dark);
+  --color-tb-teal: var(--tb-teal);
+  --color-tb-teal-light: var(--tb-teal-light);
+  --color-tb-teal-dark: var(--tb-teal-dark);
+  --color-tb-cream: var(--tb-cream);
+  --color-tb-sand: var(--tb-sand);
+  --color-tb-text: var(--tb-text);
+  --color-tb-muted: var(--tb-muted);
+  --color-tb-light: var(--tb-light);
+  --color-tb-green: var(--tb-green);
+  --color-tb-green-dark: var(--tb-green-dark);
+  --font-heading: var(--font-playfair);
   --color-whatsapp: #25D366;
   --color-whatsapp-dark: #128C7E;
   --color-background: var(--background);
@@ -51,6 +65,21 @@
 }
 
 :root {
+  /* Travelbuddhii brand colors */
+  --tb-orange: #FF6B35;
+  --tb-orange-light: #FF8F5E;
+  --tb-orange-dark: #E55A25;
+  --tb-teal: #00A8A8;
+  --tb-teal-light: #00C4C4;
+  --tb-teal-dark: #008B8B;
+  --tb-cream: #FDF6EC;
+  --tb-sand: #F0E6D3;
+  --tb-text: #2D2A26;
+  --tb-muted: #6B6560;
+  --tb-light: #9A9490;
+  --tb-green: #25D366;
+  --tb-green-dark: #1EBD5A;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -125,8 +154,66 @@
   }
   body {
     @apply bg-background text-foreground;
+    color: var(--tb-text);
   }
   html {
     @apply font-sans;
   }
 }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-12px) scale(1.02); }
+}
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 107, 53, 0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { opacity: 1; transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+@keyframes waveHand {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(20deg); }
+  75% { transform: rotate(-10deg); }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.animate-fadeUp { animation: fadeUp 0.5s ease forwards; }
+.animate-fadeIn { animation: fadeIn 0.4s ease forwards; }
+.animate-scaleIn { animation: scaleIn 0.35s ease forwards; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-pulseDot { animation: pulseDot 2s infinite; }
+.animate-shimmer { animation: shimmer 1.5s infinite linear; background: linear-gradient(90deg, #f0e6d3 25%, #fdf6ec 50%, #f0e6d3 75%); background-size: 200% 100%; }
+.animate-bounceIn { animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+.animate-waveHand { animation: waveHand 0.6s ease-in-out infinite; }
+.animate-slideRight { animation: slideRight 0.4s ease forwards; }
+.animate-progressPulse { animation: progressPulse 2s ease-in-out infinite; }
+
+.font-playfair { font-family: var(--font-playfair), Georgia, serif; }

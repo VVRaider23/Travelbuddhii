@@ -1,15 +1,13 @@
 "use client";
 
-import { useState } from "react";
-
 const MIN = 5000;
 const MAX = 200000;
 const STEP = 5000;
 
 const MARKERS = [
-  { value: 15000, label: "Budget hostel" },
-  { value: 30000, label: "Mid-range hotel" },
-  { value: 60000, label: "Premium resort" },
+  { value: 15000, label: "Budget" },
+  { value: 30000, label: "Mid-range" },
+  { value: 60000, label: "Premium" },
 ];
 
 interface Props {
@@ -44,23 +42,40 @@ export function BudgetSlider({ min, max, onChange }: Props) {
     <div className="flex flex-col gap-4">
       {/* Value display */}
       <div className="flex items-center justify-between">
-        <div className="bg-green-50 px-3 py-1.5 rounded-xl">
-          <span className="text-lg font-bold text-green-700">{formatINR(min)}</span>
+        <div
+          className="px-3 py-1.5 rounded-[12px]"
+          style={{ background: "rgba(0,168,168,0.08)" }}
+        >
+          <span className="text-[20px] font-bold" style={{ color: "var(--tb-teal-dark)" }}>
+            {formatINR(min)}
+          </span>
         </div>
-        <span className="text-gray-300 text-sm">–</span>
-        <div className="bg-green-50 px-3 py-1.5 rounded-xl">
-          <span className="text-lg font-bold text-green-700">{formatINR(max)}</span>
+        <span className="text-[14px] font-medium" style={{ color: "var(--tb-light)" }}>–</span>
+        <div
+          className="px-3 py-1.5 rounded-[12px]"
+          style={{ background: "rgba(0,168,168,0.08)" }}
+        >
+          <span className="text-[20px] font-bold" style={{ color: "var(--tb-teal-dark)" }}>
+            {formatINR(max)}
+          </span>
         </div>
       </div>
 
       {/* Dual range slider */}
       <div className="relative pt-1 pb-8">
         {/* Track */}
-        <div className="relative h-2 rounded-full bg-gray-200">
+        <div
+          className="relative h-2.5 rounded-full"
+          style={{ background: "var(--tb-sand)" }}
+        >
           {/* Filled portion */}
           <div
-            className="absolute h-2 rounded-full bg-green-400"
-            style={{ left: `${minPct()}%`, width: `${maxPct() - minPct()}%` }}
+            className="absolute h-2.5 rounded-full transition-all"
+            style={{
+              left: `${minPct()}%`,
+              width: `${maxPct() - minPct()}%`,
+              background: "linear-gradient(90deg, var(--tb-teal), var(--tb-teal-light))",
+            }}
           />
         </div>
 
@@ -72,7 +87,8 @@ export function BudgetSlider({ min, max, onChange }: Props) {
           step={STEP}
           value={min}
           onChange={handleMinChange}
-          className="absolute inset-x-0 top-0 h-2 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-green-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md"
+          className="absolute inset-x-0 top-0 h-2.5 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:shadow-md"
+          style={{ ["--thumb-border" as string]: "var(--tb-teal)" }}
         />
 
         {/* Max thumb */}
@@ -83,7 +99,7 @@ export function BudgetSlider({ min, max, onChange }: Props) {
           step={STEP}
           value={max}
           onChange={handleMaxChange}
-          className="absolute inset-x-0 top-0 h-2 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-green-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md"
+          className="absolute inset-x-0 top-0 h-2.5 w-full appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:shadow-md"
         />
 
         {/* Markers */}
@@ -96,10 +112,12 @@ export function BudgetSlider({ min, max, onChange }: Props) {
                 className="absolute flex flex-col items-center"
                 style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
               >
-                <div className="w-px h-2 bg-gray-300" />
-                <span className="text-[9px] text-gray-400 text-center mt-0.5 whitespace-nowrap">
-                  {formatINR(m.value)}
-                  <br />{m.label}
+                <div className="w-px h-2" style={{ background: "var(--tb-sand)" }} />
+                <span
+                  className="text-[9px] text-center mt-0.5 whitespace-nowrap"
+                  style={{ color: "var(--tb-light)" }}
+                >
+                  {formatINR(m.value)}<br />{m.label}
                 </span>
               </div>
             );

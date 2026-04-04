@@ -89,24 +89,40 @@ export default function BudgetPage() {
   return (
     <div className="flex flex-col gap-0 pb-6">
       {/* Header */}
-      <div className="bg-white px-4 pt-6 pb-4 border-b border-gray-100">
-        <h1 className="text-xl font-bold text-gray-900">Budget + Vibe</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
+      <div
+        className="px-4 pt-6 pb-4"
+        style={{ background: "rgba(255,255,255,0.9)", borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+      >
+        <h1 className="text-[20px] font-bold" style={{ color: "var(--tb-text)" }}>
+          Budget + Vibe 💰
+        </h1>
+        <p className="text-[13px] mt-0.5" style={{ color: "var(--tb-light)" }}>
           Your budget stays private — only the overlap is shown
         </p>
-        {/* Privacy badge */}
-        <div className="mt-3 flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2">
+        <div
+          className="mt-3 flex items-center gap-2 px-3 py-2 rounded-[12px]"
+          style={{ background: "rgba(37,211,102,0.06)", border: "1px solid rgba(37,211,102,0.12)" }}
+        >
           <span className="text-sm">🔒</span>
-          <span className="text-xs text-green-700">
+          <span className="text-[12px] font-medium" style={{ color: "#16A34A" }}>
             Individual budgets are never shared. We only show where everyone overlaps.
           </span>
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 p-4">
+      <div className="flex flex-col gap-5 p-4">
         {/* Budget slider */}
-        <div className="bg-white rounded-2xl p-4 border border-gray-100">
-          <p className="text-sm font-semibold text-gray-800 mb-4">Your comfort budget (per person)</p>
+        <div
+          className="rounded-[18px] p-5"
+          style={{
+            background: "rgba(255,255,255,0.95)",
+            border: "1px solid rgba(0,0,0,0.04)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+          }}
+        >
+          <p className="text-[14px] font-semibold mb-4" style={{ color: "var(--tb-text)" }}>
+            Your comfort budget (per person)
+          </p>
           <BudgetSlider
             min={budgetMin}
             max={budgetMax}
@@ -115,9 +131,20 @@ export default function BudgetPage() {
         </div>
 
         {/* Vibe chips */}
-        <div className="bg-white rounded-2xl p-4 border border-gray-100">
-          <p className="text-sm font-semibold text-gray-800 mb-1">What kind of trip?</p>
-          <p className="text-xs text-gray-400 mb-4">Pick all that apply</p>
+        <div
+          className="rounded-[18px] p-5"
+          style={{
+            background: "rgba(255,255,255,0.95)",
+            border: "1px solid rgba(0,0,0,0.04)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+          }}
+        >
+          <p className="text-[14px] font-semibold mb-1" style={{ color: "var(--tb-text)" }}>
+            What kind of trip? ✨
+          </p>
+          <p className="text-[12px] mb-4" style={{ color: "var(--tb-light)" }}>
+            Pick all that apply
+          </p>
           <VibeChips selected={vibes} onChange={setVibes} />
         </div>
 
@@ -126,8 +153,11 @@ export default function BudgetPage() {
           onClick={handleSave}
           disabled={saving || vibes.length === 0}
           whileTap={{ scale: 0.97 }}
-          className="w-full py-4 rounded-2xl text-white font-semibold text-base disabled:opacity-50 transition-all"
-          style={{ backgroundColor: "#25D366" }}
+          className="w-full py-4 rounded-[18px] text-white font-bold text-[16px] disabled:opacity-50 transition-all hover:-translate-y-0.5 disabled:translate-y-0"
+          style={{
+            background: "linear-gradient(135deg, #25D366 0%, #2EE07A 100%)",
+            boxShadow: "0 4px 16px rgba(37,211,102,0.25)",
+          }}
         >
           {saving ? "Saving..." : submitted ? "Update preferences" : "Save preferences"}
         </motion.button>
@@ -135,7 +165,10 @@ export default function BudgetPage() {
         {/* Group results */}
         {data && (data.respondedCount >= 1 || submitted) && (
           <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            <p
+              className="text-[11px] font-bold uppercase tracking-widest mb-3 pl-1"
+              style={{ color: "var(--tb-light)" }}
+            >
               Group summary
             </p>
             <AnonymousAggregation

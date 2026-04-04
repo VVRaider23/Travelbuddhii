@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TripStoreProvider } from "@/components/layout/TripStoreProvider";
-import { TripNav } from "@/components/layout/TripNav";
+import { ConditionalNav } from "@/components/layout/ConditionalNav";
 import { TripHeader } from "@/components/layout/TripHeader";
 
 interface Props {
@@ -61,10 +61,10 @@ export default async function TripLayout({ children, params }: Props) {
       confirmedEnd={trip.confirmed_end}
       members={members}
     >
-      <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-col min-h-screen" style={{ background: "var(--tb-cream)" }}>
         <TripHeader />
-        <main className="flex-1 pt-12 pb-20">{children}</main>
-        <TripNav slug={slug} />
+        <main className="flex-1 pt-[52px] pb-20">{children}</main>
+        <ConditionalNav slug={slug} />
       </div>
     </TripStoreProvider>
   );

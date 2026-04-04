@@ -16,16 +16,37 @@ export function TripHeader() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-40 h-12 flex items-center justify-between px-4">
-      <Link href="/" className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1">
+    <header className="fixed top-0 left-0 right-0 z-40 h-[52px] flex items-center justify-between px-4"
+      style={{
+        background: "rgba(255,255,255,0.92)",
+        borderBottom: "1px solid rgba(0,0,0,0.05)",
+        backdropFilter: "blur(16px)",
+      }}
+    >
+      <Link
+        href="/"
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[13px] font-medium"
+        style={{ color: "var(--tb-light)" }}
+      >
         ← Home
       </Link>
-      <span className="text-sm font-semibold text-gray-800 truncate max-w-[180px]">
-        {tripName ?? ""}
-      </span>
+
+      <div className="flex items-center gap-1.5 max-w-[200px] overflow-hidden">
+        <div
+          className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0"
+          style={{ background: "linear-gradient(135deg, var(--tb-orange), var(--tb-orange-light))" }}
+        >
+          <span className="font-playfair text-[11px] font-black text-white">T</span>
+        </div>
+        <span className="text-sm font-semibold truncate" style={{ color: "var(--tb-text)" }}>
+          {tripName ?? ""}
+        </span>
+      </div>
+
       <button
         onClick={handleLogout}
-        className="text-sm text-gray-400 hover:text-red-500 transition-colors"
+        className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors hover:text-red-400"
+        style={{ color: "var(--tb-light)" }}
       >
         Logout
       </button>
