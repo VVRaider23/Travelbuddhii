@@ -11,31 +11,44 @@ const MESSAGES = [
 
 const NAME_COLORS = ["#1FA855", "#D4436A", "#6B72E0", "#D4832A"];
 
-export function WhatsAppChaos() {
+interface Props {
+  onGone?: () => void;
+}
+
+export function WhatsAppChaos({ onGone }: Props) {
   const [msgs, setMsgs] = useState<typeof MESSAGES>([]);
   const [phase, setPhase] = useState<"chat" | "dissolve" | "gone">("chat");
 
   useEffect(() => {
+    // Messages appear one by one: 400ms, 1000ms, 1600ms, 2200ms
     MESSAGES.forEach((msg, i) => {
       setTimeout(() => setMsgs((prev) => [...prev, msg]), 400 + i * 600);
     });
-    const dissolveAt = 400 + MESSAGES.length * 600 + 600;
-    const goneAt = dissolveAt + 600;
+
+    // Last message at 2200ms, hold for 600ms, then dissolve
+    const dissolveAt = 400 + MESSAGES.length * 600 + 600; // ~3400ms
+    const goneAt = dissolveAt + 700;                       // ~4100ms
+
     const t1 = setTimeout(() => setPhase("dissolve"), dissolveAt);
-    const t2 = setTimeout(() => setPhase("gone"), goneAt);
+    const t2 = setTimeout(() => {
+      setPhase("gone");
+      onGone?.();
+    }, goneAt);
+
     return () => { clearTimeout(t1); clearTimeout(t2); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (phase === "gone") return null;
 
   return (
     <div
-      className="flex flex-col items-center mb-2"
+      className="flex flex-col items-center w-full"
       style={{
         padding: "0 8px",
         opacity: phase === "dissolve" ? 0 : 1,
-        transform: phase === "dissolve" ? "translateY(-20px) scale(0.95)" : "translateY(0) scale(1)",
-        transition: "all 0.6s cubic-bezier(0.4,0,0.2,1)",
+        transform: phase === "dissolve" ? "translateY(-24px) scale(0.93)" : "translateY(0) scale(1)",
+        transition: "opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1)",
       }}
     >
       {/* WA header */}
@@ -80,10 +93,7 @@ export function WhatsAppChaos() {
               }}
             >
               {msg.side === "left" && (
-                <div
-                  className="text-[10.5px] font-semibold mb-0.5"
-                  style={{ color: NAME_COLORS[i % 4] }}
-                >
+                <div className="text-[10.5px] font-semibold mb-0.5" style={{ color: NAME_COLORS[i % 4] }}>
                   {msg.name}
                 </div>
               )}
