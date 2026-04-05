@@ -1,5 +1,6 @@
 import { HeroSection } from "@/components/home/HeroSection";
 import { HowItWorks } from "@/components/home/HowItWorks";
+import { TripStories } from "@/components/home/TripStories";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
 
 export default function HomePage() {
@@ -7,6 +8,7 @@ export default function HomePage() {
     <main className="flex flex-col min-h-screen">
       <HeroSection />
       <HowItWorks />
+      <TripStories />
       <FeatureGrid />
     </main>
   );
