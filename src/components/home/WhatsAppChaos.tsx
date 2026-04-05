@@ -43,61 +43,90 @@ export function WhatsAppChaos({ onGone }: Props) {
 
   return (
     <div
-      className="flex flex-col w-full"
       style={{
+        padding: "0 8px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
         opacity: phase === "dissolve" ? 0 : 1,
         transform: phase === "dissolve" ? "translateY(-24px) scale(0.93)" : "translateY(0) scale(1)",
         transition: "opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1)",
       }}
     >
-      {/* WA header — edge-to-edge, square top corners to flush with phone frame */}
+      {/* WA header */}
       <div
-        className="w-full flex items-center gap-2.5 px-4 py-3"
-        style={{ background: "#075E54" }}
+        style={{
+          width: "100%",
+          maxWidth: 320,
+          background: "#075E54",
+          borderRadius: "14px 14px 0 0",
+          padding: "9px 14px",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
       >
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
-          style={{ background: "#128C7E" }}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "#128C7E",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "white",
+            flexShrink: 0,
+          }}
         >
           GG
         </div>
         <div>
-          <div className="text-[13px] font-semibold text-white">Goa Gang 🏖️</div>
-          <div className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>6 members</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "white" }}>Goa Gang 🏖️</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)" }}>6 members</div>
         </div>
       </div>
 
       {/* Chat body */}
       <div
-        className="w-full flex flex-col gap-1 p-3"
         style={{
+          width: "100%",
+          maxWidth: 320,
           background: "#ECE5DD",
+          borderRadius: "0 0 14px 14px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          padding: 12,
           minHeight: 80,
         }}
       >
         {msgs.map((msg, i) => (
           <div
             key={i}
-            className="flex animate-fadeUp"
-            style={{ justifyContent: msg.side === "right" ? "flex-end" : "flex-start" }}
+            className="animate-fadeUp"
+            style={{ display: "flex", justifyContent: msg.side === "right" ? "flex-end" : "flex-start" }}
           >
             <div
-              className="max-w-[78%] px-2.5 py-1"
               style={{
+                maxWidth: "78%",
+                padding: "4px 10px",
                 background: msg.side === "right" ? "#DCF8C6" : "#FFFFFF",
                 borderRadius: msg.side === "right" ? "10px 2px 10px 10px" : "2px 10px 10px 10px",
                 boxShadow: "0 1px 1px rgba(0,0,0,0.06)",
               }}
             >
               {msg.side === "left" && (
-                <div className="text-[10.5px] font-semibold mb-0.5" style={{ color: NAME_COLORS[i % 4] }}>
+                <div style={{ fontSize: 10.5, fontWeight: 600, marginBottom: 2, color: NAME_COLORS[i % 4] }}>
                   {msg.name}
                 </div>
               )}
-              <div className="text-[12px] leading-snug" style={{ color: "#303030" }}>
+              <div style={{ fontSize: 12, lineHeight: "1.4", color: "#303030" }}>
                 {msg.text}
               </div>
-              <div className="text-[9.5px] text-right mt-0.5" style={{ color: "#8696A0" }}>
+              <div style={{ fontSize: 9.5, textAlign: "right", marginTop: 2, color: "#8696A0" }}>
                 {`${9 + Math.floor(i / 2)}:${(15 + i * 3).toString().padStart(2, "0")} PM`}
               </div>
             </div>

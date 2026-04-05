@@ -1,6 +1,8 @@
 import { HeroSection } from "@/components/home/HeroSection";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { FeatureGrid } from "@/components/home/FeatureGrid";
+import { TripStories } from "@/components/home/TripStories";
+import { BottomCTA } from "@/components/home/BottomCTA";
 
 export default function HomePage() {
   return (
@@ -8,6 +10,8 @@ export default function HomePage() {
       <HeroSection />
       <HowItWorks />
       <FeatureGrid />
+      <TripStories />
+      <BottomCTA />
     </main>
   );
 }
