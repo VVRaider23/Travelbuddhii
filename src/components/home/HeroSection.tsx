@@ -81,20 +81,31 @@ export function HeroSection() {
 
   return (
     <section
-      className="relative flex flex-col items-center justify-center min-h-screen px-5 overflow-hidden"
+      className="relative flex items-start justify-center min-h-screen overflow-hidden"
       style={{
         background: "linear-gradient(165deg, var(--tb-cream) 0%, #FFF5E8 35%, #FFECD9 65%, var(--tb-sand) 100%)",
-        paddingBottom: "3rem",
-        paddingTop: "2rem",
+        padding: "40px 20px 60px",
       }}
     >
-      {/* Floating orbs */}
-      <div className="absolute pointer-events-none animate-float" style={{ top: -60, right: -40, width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,107,53,0.15) 0%, transparent 70%)" }} />
-      <div className="absolute pointer-events-none" style={{ bottom: "10%", left: -60, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,168,168,0.12) 0%, transparent 70%)", animation: "float 10s ease-in-out infinite" }} />
-      <div className="absolute pointer-events-none animate-float" style={{ top: "30%", left: "15%", width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,143,94,0.1) 0%, transparent 70%)", animationDelay: "2s" }} />
+      {/* Floating orbs — behind the phone frame */}
+      <div className="absolute pointer-events-none animate-float" style={{ top: -60, right: -40, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,107,53,0.18) 0%, transparent 70%)" }} />
+      <div className="absolute pointer-events-none" style={{ bottom: "10%", left: -80, width: 260, height: 260, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,168,168,0.14) 0%, transparent 70%)", animation: "float 10s ease-in-out infinite" }} />
+      <div className="absolute pointer-events-none animate-float" style={{ top: "35%", left: "8%", width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,143,94,0.1) 0%, transparent 70%)", animationDelay: "2s" }} />
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20px 20px, rgba(255,107,53,0.03) 2px, transparent 2px)", backgroundSize: "40px 40px" }} />
 
-      <div className="relative z-10 flex flex-col items-center gap-4 text-center w-full" style={{ maxWidth: 420 }}>
+      {/* Phone frame */}
+      <div
+        className="relative z-10 w-full flex flex-col items-center gap-4 text-center"
+        style={{
+          maxWidth: 420,
+          borderRadius: 36,
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(0,0,0,0.07)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.05)",
+          overflow: "hidden",
+          padding: "0 0 24px",
+        }}
+      >
 
         {/* Phase 1: WhatsApp chaos — shows first, then fades out */}
         <AnimatePresence>
@@ -114,7 +125,7 @@ export function HeroSection() {
           {chaosGone && (
             <motion.div
               key="hero"
-              className="flex flex-col items-center gap-4 w-full"
+              className="flex flex-col items-center gap-4 w-full px-5"
               variants={container}
               initial="hidden"
               animate="show"

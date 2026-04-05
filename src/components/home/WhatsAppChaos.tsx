@@ -43,38 +43,35 @@ export function WhatsAppChaos({ onGone }: Props) {
 
   return (
     <div
-      className="flex flex-col items-center w-full"
+      className="flex flex-col w-full"
       style={{
-        padding: "0 8px",
         opacity: phase === "dissolve" ? 0 : 1,
         transform: phase === "dissolve" ? "translateY(-24px) scale(0.93)" : "translateY(0) scale(1)",
         transition: "opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1)",
       }}
     >
-      {/* WA header */}
+      {/* WA header — edge-to-edge, square top corners to flush with phone frame */}
       <div
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5"
-        style={{ maxWidth: 320, background: "#075E54", borderRadius: "14px 14px 0 0" }}
+        className="w-full flex items-center gap-2.5 px-4 py-3"
+        style={{ background: "#075E54" }}
       >
         <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold text-white shrink-0"
           style={{ background: "#128C7E" }}
         >
           GG
         </div>
         <div>
-          <div className="text-[12.5px] font-semibold text-white">Goa Gang 🏖️</div>
-          <div className="text-[9.5px]" style={{ color: "rgba(255,255,255,0.55)" }}>6 members</div>
+          <div className="text-[13px] font-semibold text-white">Goa Gang 🏖️</div>
+          <div className="text-[10px]" style={{ color: "rgba(255,255,255,0.55)" }}>6 members</div>
         </div>
       </div>
 
       {/* Chat body */}
       <div
-        className="w-full flex flex-col gap-1 p-2.5"
+        className="w-full flex flex-col gap-1 p-3"
         style={{
-          maxWidth: 320,
           background: "#ECE5DD",
-          borderRadius: "0 0 14px 14px",
           minHeight: 80,
         }}
       >
