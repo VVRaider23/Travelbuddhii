@@ -25,9 +25,9 @@ export function WhatsAppChaos({ onGone }: Props) {
       setTimeout(() => setMsgs((prev) => [...prev, msg]), 400 + i * 600);
     });
 
-    // Last message at 2200ms, hold for 600ms, then dissolve
-    const dissolveAt = 400 + MESSAGES.length * 600 + 600; // ~3400ms
-    const goneAt = dissolveAt + 700;                       // ~4100ms
+    // Last message at 2200ms, hold for 2800ms, then dissolve
+    const dissolveAt = 400 + MESSAGES.length * 600 + 2800; // ~5000ms
+    const goneAt = dissolveAt + 700;                        // ~5700ms
 
     const t1 = setTimeout(() => setPhase("dissolve"), dissolveAt);
     const t2 = setTimeout(() => {
