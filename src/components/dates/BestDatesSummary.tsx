@@ -55,89 +55,116 @@ function findBestRanges(heatmap: Record<string, number>, minCount: number): Date
 
 const RANK_ICONS = ["🏆", "🥈", "🥉"];
 
+function formatRange(r: DateRange) {
+  const start = parseISO(r.start);
+  const end = parseISO(r.end);
+  if (r.start === r.end) return format(start, "d MMM");
+  if (start.getMonth() === end.getMonth()) {
+    return `${format(start, "d")}–${format(end, "d MMM")}`;
+  }
+  return `${format(start, "d MMM")}–${format(end, "d MMM")}`;
+}
+
 export function BestDatesSummary({ heatmap, totalMembers, members, votedUserIds, currentUserId }: Props) {
   const nonVoters = members.filter((m) => !votedUserIds.has(m.user_id) && m.user_id !== currentUserId);
   const voterCount = votedUserIds.size;
   const threshold = Math.max(1, Math.ceil(totalMembers * 0.5));
   const bestRanges = useMemo(() => findBestRanges(heatmap, threshold), [heatmap, threshold]);
-
-  function formatRange(r: DateRange) {
-    const start = parseISO(r.start);
-    const end = parseISO(r.end);
-    if (r.start === r.end) return format(start, "d MMM");
-    if (start.getMonth() === end.getMonth()) {
-      return `${format(start, "d")}–${format(end, "d MMM")}`;
-    }
-    return `${format(start, "d MMM")}–${format(end, "d MMM")}`;
-  }
+  const isFirstVoter = voterCount <= 1 && totalMembers > 1;
 
   return (
     <div
-      className="mx-4 rounded-[18px] p-4 flex flex-col gap-3"
       style={{
+        margin: "0 16px",
+        borderRadius: 18, padding: "16px",
         background: "rgba(255,255,255,0.95)",
         border: "1px solid rgba(0,0,0,0.04)",
         boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+        display: "flex", flexDirection: "column", gap: 12,
       }}
     >
-      <div className="flex items-center justify-between">
-        <p className="text-[14px] font-semibold" style={{ color: "var(--tb-text)" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--tb-text)" }}>
           Availability summary
         </p>
-        <span
-          className="text-[11px] font-medium px-2.5 py-1 rounded-full"
-          style={{ background: "rgba(255,107,53,0.08)", color: "var(--tb-orange)" }}
-        >
-          {voterCount}/{totalMembers} responded
+        <span style={{
+          fontSize: 11, fontWeight: 600,
+          color: "var(--tb-orange)",
+        }}>
+          {voterCount}/{totalMembers} voted
         </span>
       </div>
 
+      {/* First voter nudge */}
+      {isFirstVoter && (
+        <p style={{
+          fontSize: 13, fontWeight: 500,
+          color: "var(--tb-orange)",
+          padding: "8px 10px", borderRadius: 10,
+          background: "rgba(255,107,53,0.06)",
+        }}>
+          🎉 You&apos;re the first one! Share so friends can vote
+        </p>
+      )}
+
+      {/* Best ranges */}
       {bestRanges.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {bestRanges.map((r, i) => (
-            <div
-              key={r.start}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[12px]"
-              style={{
-                background: i === 0 ? "rgba(255,107,53,0.05)" : "rgba(0,0,0,0.02)",
-                border: `1px solid ${i === 0 ? "rgba(255,107,53,0.12)" : "rgba(0,0,0,0.04)"}`,
-              }}
-            >
-              <span className="text-base shrink-0">{RANK_ICONS[i]}</span>
-              <div className="flex-1">
-                <span className="text-[14px] font-semibold" style={{ color: "var(--tb-text)" }}>
-                  {formatRange(r)}
-                </span>
-                <span className="text-[12px] ml-2" style={{ color: "var(--tb-light)" }}>
-                  works for {r.count}/{totalMembers}
-                </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {bestRanges.map((r, i) => {
+            const pct = r.count / totalMembers;
+            const barColor = pct >= 1 ? "#25D366" : pct >= 0.75 ? "#34D399" : pct >= 0.5 ? "#F59E0B" : "var(--tb-orange)";
+            return (
+              <div
+                key={r.start}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "10px 12px", borderRadius: 12,
+                  background: i === 0 ? "rgba(255,107,53,0.04)" : "rgba(0,0,0,0.015)",
+                  border: `1px solid ${i === 0 ? "rgba(255,107,53,0.1)" : "rgba(0,0,0,0.04)"}`,
+                }}
+              >
+                <span style={{ fontSize: 16, flexShrink: 0 }}>{RANK_ICONS[i]}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--tb-text)" }}>
+                    {formatRange(r)}
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--tb-light)", marginLeft: 6 }}>
+                    works for {r.count}/{totalMembers}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div style={{
+                  width: 48, height: 5, borderRadius: 100,
+                  background: "rgba(0,0,0,0.06)", flexShrink: 0,
+                }}>
+                  <div style={{
+                    width: `${pct * 100}%`, height: "100%",
+                    borderRadius: 100, background: barColor,
+                    transition: "width 0.4s ease",
+                  }} />
+                </div>
               </div>
-              {i === 0 && r.count === totalMembers && (
-                <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-md"
-                  style={{ background: "rgba(37,211,102,0.1)", color: "#25D366" }}
-                >
-                  Everyone ✓
-                </span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : voterCount < 2 ? (
-        <p className="text-[13px]" style={{ color: "var(--tb-light)" }}>
+        <p style={{ fontSize: 13, color: "var(--tb-light)" }}>
           Waiting for more votes to show overlap...
         </p>
       ) : (
-        <p className="text-[13px]" style={{ color: "var(--tb-light)" }}>
+        <p style={{ fontSize: 13, color: "var(--tb-light)" }}>
           No dates work for 50%+ yet. Widen the window?
         </p>
       )}
 
+      {/* Non-voters nudge */}
       {nonVoters.length > 0 && (
-        <p
-          className="text-[12px] font-medium px-3 py-2 rounded-[10px]"
-          style={{ background: "rgba(245,158,11,0.08)", color: "#D97706" }}
-        >
+        <p style={{
+          fontSize: 12, fontWeight: 500,
+          padding: "8px 10px", borderRadius: 10,
+          background: "rgba(245,158,11,0.08)", color: "#D97706",
+        }}>
           ⏳ {nonVoters.length} {nonVoters.length === 1 ? "person hasn't" : "people haven't"} voted yet
         </p>
       )}

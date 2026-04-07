@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { parseISO, format, differenceInDays } from "date-fns";
+import { parseISO, format, differenceInDays, eachDayOfInterval, getDay } from "date-fns";
 import { useTripStore } from "@/store/tripStore";
 import { createClient } from "@/lib/supabase/client";
 import { DateGrid } from "@/components/dates/DateGrid";
@@ -83,6 +83,7 @@ export default function DatesPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [trip, setTrip] = useState<TripInfo | null>(null);
   const [allVotes, setAllVotes] = useState<VoteRow[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -93,7 +94,6 @@ export default function DatesPage() {
   const supabase = createClient();
   const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Load initial data
   useEffect(() => {
     fetch(`/api/trips/${slug}/dates`)
       .then((r) => r.json())
@@ -109,6 +109,7 @@ export default function DatesPage() {
             .map((v: VoteRow) => v.date)
         );
         setMyDates(mine);
+        setSaved(mine.size > 0);
         setLoading(false);
       })
       .catch(() => {
@@ -118,7 +119,6 @@ export default function DatesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  // Realtime: Postgres Changes for votes + Broadcast for pulse animations
   useEffect(() => {
     if (!tripId) return;
 
@@ -168,6 +168,7 @@ export default function DatesPage() {
   }, [tripId, slug]);
 
   function handleToggle(date: string) {
+    setSaved(false);
     setMyDates((prev) => {
       const next = new Set(prev);
       if (next.has(date)) {
@@ -184,6 +185,45 @@ export default function DatesPage() {
     });
   }
 
+  function handleSelectAll() {
+    if (!trip?.date_window_start || !trip?.date_window_end) return;
+    setSaved(false);
+    const all = eachDayOfInterval({
+      start: parseISO(trip.date_window_start),
+      end: parseISO(trip.date_window_end),
+    }).map((d) => format(d, "yyyy-MM-dd"));
+    setMyDates(new Set(all));
+  }
+
+  function handleSelectWeekdays() {
+    if (!trip?.date_window_start || !trip?.date_window_end) return;
+    setSaved(false);
+    const weekdays = eachDayOfInterval({
+      start: parseISO(trip.date_window_start),
+      end: parseISO(trip.date_window_end),
+    })
+      .filter((d) => getDay(d) >= 1 && getDay(d) <= 5)
+      .map((d) => format(d, "yyyy-MM-dd"));
+    setMyDates(new Set(weekdays));
+  }
+
+  function handleSelectWeekends() {
+    if (!trip?.date_window_start || !trip?.date_window_end) return;
+    setSaved(false);
+    const weekends = eachDayOfInterval({
+      start: parseISO(trip.date_window_start),
+      end: parseISO(trip.date_window_end),
+    })
+      .filter((d) => getDay(d) === 0 || getDay(d) === 6)
+      .map((d) => format(d, "yyyy-MM-dd"));
+    setMyDates(new Set(weekends));
+  }
+
+  function handleClear() {
+    setSaved(false);
+    setMyDates(new Set());
+  }
+
   async function handleSave() {
     setSaving(true);
     const res = await fetch(`/api/trips/${slug}/dates`, {
@@ -191,12 +231,12 @@ export default function DatesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dates: Array.from(myDates) }),
     });
-
     setSaving(false);
     if (!res.ok) {
       toast.error("Could not save. Try again.");
       return;
     }
+    setSaved(true);
     toast.success("Availability saved!");
   }
 
@@ -228,53 +268,134 @@ export default function DatesPage() {
   const bestRanges = findBestRanges(heatmap, threshold);
   const isLocked = !!trip.confirmed_start;
 
+  const QUICK_CHIPS = [
+    { label: "All days", icon: "✅", action: handleSelectAll },
+    { label: "Weekdays", icon: "💼", action: handleSelectWeekdays },
+    { label: "Weekend", icon: "🎉", action: handleSelectWeekends },
+    { label: "Clear", icon: "✕", action: handleClear },
+  ];
+
   return (
-    <div className="flex flex-col gap-4 pb-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 100 }}>
+
       {/* Header */}
-      <div
-        className="px-4 pt-6 pb-4"
-        style={{ background: "rgba(255,255,255,0.9)", borderBottom: "1px solid rgba(0,0,0,0.04)" }}
-      >
-        <div className="flex items-center justify-between">
+      <div style={{
+        padding: "20px 16px 16px",
+        background: "rgba(255,255,255,0.95)",
+        borderBottom: "1px solid rgba(0,0,0,0.04)",
+        display: "flex", flexDirection: "column", gap: 10,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <h1 className="text-[20px] font-bold" style={{ color: "var(--tb-text)" }}>
-              When can everyone go?
+            <h1 style={{
+              fontFamily: "var(--font-playfair)",
+              fontSize: 22, fontWeight: 800,
+              color: "var(--tb-text)",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <span>📅</span> When can everyone go?
             </h1>
-            <p className="text-[13px] mt-0.5" style={{ color: "var(--tb-light)" }}>
-              {format(windowStart, "d MMM")} – {format(windowEnd, "d MMM yyyy")} window
+            <p style={{ fontSize: 13, color: "var(--tb-orange)", marginTop: 4, fontWeight: 500 }}>
+              📅 {format(windowStart, "d MMM")} – {format(windowEnd, "d MMM yyyy")} window
             </p>
           </div>
           {isLocked && (
-            <span
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(37,211,102,0.1)", color: "#25D366" }}
-            >
+            <span style={{
+              fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 100,
+              background: "rgba(37,211,102,0.1)", color: "#25D366",
+            }}>
               Locked ✓
             </span>
           )}
         </div>
 
+        {/* Anonymous toggle */}
         {userRole === "organizer" && !isLocked && (
           <button
             onClick={handleToggleAnonymous}
-            className="mt-3 flex items-center gap-2 text-[13px]"
-            style={{ color: "var(--tb-muted)" }}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.05)",
+              borderRadius: 12, padding: "10px 12px", cursor: "pointer",
+              fontFamily: "var(--font-sans)", width: "100%",
+            }}
           >
-            <div
-              className="w-9 h-5 rounded-full transition-colors relative"
-              style={{ background: isAnonymous ? "var(--tb-orange)" : "rgba(0,0,0,0.12)" }}
-            >
-              <div
-                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
-                style={{ transform: isAnonymous ? "translateX(16px)" : "translateX(2px)" }}
-              />
+            <div style={{
+              width: 36, height: 20, borderRadius: 100,
+              background: isAnonymous ? "var(--tb-orange)" : "rgba(0,0,0,0.12)",
+              position: "relative", flexShrink: 0, transition: "background 0.2s",
+            }}>
+              <div style={{
+                position: "absolute", top: 2, width: 16, height: 16,
+                borderRadius: "50%", background: "#fff",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                transform: isAnonymous ? "translateX(18px)" : "translateX(2px)",
+                transition: "transform 0.2s",
+              }} />
             </div>
-            <span>Anonymous mode</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "var(--tb-text)" }}>
+              Anonymous mode
+            </span>
+            <span style={{ fontSize: 12, color: "var(--tb-light)", marginLeft: "auto" }}>
+              {isAnonymous ? "Names hidden" : "Names visible"}
+            </span>
           </button>
         )}
       </div>
 
-      {/* Date grid */}
+      {/* Quick-select chips */}
+      {!isLocked && (
+        <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          {QUICK_CHIPS.map((chip) => (
+            <button
+              key={chip.label}
+              onClick={chip.action}
+              style={{
+                padding: "10px 4px",
+                borderRadius: 14,
+                border: "1.5px solid rgba(0,0,0,0.07)",
+                background: "#fff",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                cursor: "pointer", transition: "all 0.15s ease",
+                fontFamily: "var(--font-sans)",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{chip.icon}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tb-muted)" }}>{chip.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* "I'm free all days" button */}
+      {!isLocked && (
+        <div style={{ padding: "0 16px" }}>
+          <button
+            onClick={handleSelectAll}
+            style={{
+              width: "100%", padding: "13px 16px",
+              borderRadius: 16,
+              background: "rgba(0,0,0,0.03)",
+              border: "1.5px solid rgba(0,0,0,0.06)",
+              fontSize: 13, fontWeight: 600, color: "var(--tb-muted)",
+              cursor: "pointer", fontFamily: "var(--font-sans)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}
+          >
+            <span>🎉</span> I&apos;m free all days — you guys decide
+          </button>
+        </div>
+      )}
+
+      {/* Date cards label */}
+      <div style={{ padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tb-muted)" }}>
+          👆 Tap the days you&apos;re free
+        </span>
+        <span style={{ fontSize: 11, color: "var(--tb-light)" }}>← swipe →</span>
+      </div>
+
+      {/* Horizontal date cards */}
       <DateGrid
         windowStart={windowStart}
         windowEnd={windowEnd}
@@ -286,7 +407,23 @@ export default function DatesPage() {
         onToggle={isLocked ? () => {} : handleToggle}
       />
 
-      {/* Best dates summary */}
+      {/* Selected count badge */}
+      {!isLocked && myDates.size > 0 && (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <span style={{
+            fontSize: 12, fontWeight: 600,
+            padding: "5px 14px", borderRadius: 100,
+            background: "rgba(255,107,53,0.08)",
+            color: "var(--tb-orange)",
+            display: "flex", alignItems: "center", gap: 5,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--tb-orange)", display: "inline-block" }} />
+            {myDates.size} {myDates.size === 1 ? "day" : "days"} selected
+          </span>
+        </div>
+      )}
+
+      {/* Availability summary */}
       <BestDatesSummary
         heatmap={heatmap}
         totalMembers={members.length}
@@ -309,23 +446,40 @@ export default function DatesPage() {
         />
       )}
 
-      {/* Save */}
+      {/* Save button */}
       {!isLocked && (
-        <div className="px-4">
+        <div style={{ padding: "0 16px" }}>
           <motion.button
-            onClick={handleSave}
+            onClick={saved ? undefined : handleSave}
             disabled={saving || myDates.size === 0}
-            whileTap={{ scale: 0.97 }}
-            className="w-full py-4 rounded-[18px] text-white font-bold text-[16px] disabled:opacity-50 transition-all hover:-translate-y-0.5 disabled:translate-y-0"
+            whileTap={saved ? {} : { scale: 0.97 }}
             style={{
-              background: "linear-gradient(135deg, #25D366 0%, #2EE07A 100%)",
-              boxShadow: "0 4px 16px rgba(37,211,102,0.25)",
+              width: "100%", padding: "16px",
+              borderRadius: 18,
+              border: "none",
+              background: saved
+                ? "rgba(0,0,0,0.05)"
+                : "linear-gradient(135deg, #25D366 0%, #2EE07A 100%)",
+              color: saved ? "var(--tb-muted)" : "#fff",
+              fontSize: 15, fontWeight: 700,
+              cursor: saved ? "default" : myDates.size === 0 ? "default" : "pointer",
+              fontFamily: "var(--font-sans)",
+              boxShadow: saved ? "none" : "0 4px 16px rgba(37,211,102,0.25)",
+              transition: "all 0.2s ease",
+              opacity: myDates.size === 0 && !saved ? 0.45 : 1,
             }}
           >
             {saving
               ? "Saving..."
-              : `Save my availability (${myDates.size} ${myDates.size === 1 ? "day" : "days"})`}
+              : saved
+                ? `✅ Availability saved (${myDates.size} ${myDates.size === 1 ? "day" : "days"})`
+                : `Save my availability (${myDates.size} ${myDates.size === 1 ? "day" : "days"})`}
           </motion.button>
+          {!saved && myDates.size > 0 && (
+            <p style={{ fontSize: 11, color: "var(--tb-light)", textAlign: "center", marginTop: 6 }}>
+              Choose the best window. This advances to destination voting.
+            </p>
+          )}
         </div>
       )}
     </div>

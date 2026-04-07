@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { format, eachDayOfInterval, getDay } from "date-fns";
+import { format, eachDayOfInterval } from "date-fns";
 
 interface Props {
   windowStart: Date;
@@ -26,101 +26,87 @@ export function DateGrid({
 }: Props) {
   const days = eachDayOfInterval({ start: windowStart, end: windowEnd });
 
-  // Group by month
-  const months: { label: string; days: Date[] }[] = [];
-  let currentMonth = "";
-  for (const day of days) {
-    const monthKey = format(day, "yyyy-MM");
-    if (monthKey !== currentMonth) {
-      currentMonth = monthKey;
-      months.push({ label: format(day, "MMMM yyyy"), days: [] });
-    }
-    months[months.length - 1].days.push(day);
-  }
-
-  function getHeatmapStyle(count: number, isSelected: boolean): React.CSSProperties {
-    if (isSelected) {
-      return {
-        background: "linear-gradient(135deg, var(--tb-orange), var(--tb-orange-light))",
-        color: "#fff",
-        fontWeight: 700,
-        boxShadow: "0 2px 8px rgba(255,107,53,0.3)",
-      };
-    }
-    if (count === 0) return { background: "rgba(0,0,0,0.025)", color: "var(--tb-muted)" };
-    const pct = count / totalMembers;
-    if (pct >= 1) return { background: "rgba(37,211,102,0.85)", color: "#fff" };
-    if (pct >= 0.75) return { background: "rgba(37,211,102,0.6)", color: "var(--tb-text)" };
-    if (pct >= 0.5) return { background: "rgba(255,193,7,0.55)", color: "var(--tb-text)" };
-    if (pct >= 0.25) return { background: "rgba(255,107,53,0.25)", color: "var(--tb-text)" };
-    return { background: "rgba(255,107,53,0.1)", color: "var(--tb-muted)" };
-  }
-
   return (
-    <div className="flex flex-col gap-6">
-      {months.map((month) => {
-        const firstDay = month.days[0];
-        const leadingBlanks = getDay(firstDay);
+    <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div style={{
+        display: "flex", gap: 8,
+        paddingLeft: 16, paddingRight: 16,
+        paddingBottom: 4,
+        width: "max-content",
+      }}>
+        {days.map((day) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const isSelected = myDates.has(dateStr);
+          const isPulsing = pulsingDates.has(dateStr);
+          const count = heatmap[dateStr] ?? 0;
+          const dayName = format(day, "EEE").toUpperCase();
+          const dayNum = format(day, "d");
+          const monthName = format(day, "MMM").toUpperCase();
 
-        return (
-          <div key={month.label} className="px-4">
-            <p
-              className="text-[13px] font-semibold mb-3"
-              style={{ color: "var(--tb-text)" }}
+          return (
+            <motion.button
+              key={dateStr}
+              onClick={() => onToggle(dateStr)}
+              animate={isPulsing ? { scale: [1, 1.12, 1] } : {}}
+              transition={{ duration: 0.2 }}
+              style={{
+                width: 72, flexShrink: 0,
+                padding: "12px 8px 10px",
+                borderRadius: 18,
+                background: "#fff",
+                border: `1.5px solid ${isSelected ? "var(--tb-orange)" : "rgba(0,0,0,0.07)"}`,
+                boxShadow: isSelected
+                  ? "0 2px 12px rgba(255,107,53,0.12)"
+                  : "0 1px 4px rgba(0,0,0,0.05)",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                fontFamily: "var(--font-sans)",
+              }}
             >
-              {month.label}
-            </p>
+              <span style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: "0.06em",
+                color: isSelected ? "var(--tb-orange)" : "var(--tb-light)",
+              }}>
+                {dayName}
+              </span>
+              <span style={{
+                fontSize: 28, fontWeight: 800, lineHeight: 1.1,
+                color: isSelected ? "var(--tb-orange)" : "var(--tb-text)",
+              }}>
+                {dayNum}
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: "0.06em",
+                color: isSelected ? "var(--tb-orange-light)" : "var(--tb-light)",
+              }}>
+                {monthName}
+              </span>
 
-            <div className="grid grid-cols-7 gap-1.5">
-              {/* Day headers */}
-              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
-                <div
-                  key={i}
-                  className="text-center text-[10px] font-semibold uppercase tracking-wider pb-1"
-                  style={{ color: "var(--tb-light)" }}
-                >
-                  {d}
-                </div>
-              ))}
-
-              {/* Leading blanks */}
-              {Array.from({ length: leadingBlanks }).map((_, i) => (
-                <div key={`blank-${i}`} />
-              ))}
-
-              {/* Date cells */}
-              {month.days.map((day) => {
-                const dateStr = format(day, "yyyy-MM-dd");
-                const count = heatmap[dateStr] ?? 0;
-                const isSelected = myDates.has(dateStr);
-                const isPulsing = pulsingDates.has(dateStr);
-                const cellStyle = getHeatmapStyle(count, isSelected);
-
-                return (
-                  <motion.button
-                    key={dateStr}
-                    onClick={() => onToggle(dateStr)}
-                    animate={isPulsing ? { scale: [1, 1.18, 1] } : {}}
-                    transition={{ duration: 0.2 }}
-                    className="relative aspect-square rounded-[12px] flex flex-col items-center justify-center min-h-[44px] text-[13px] transition-all active:scale-95"
-                    style={cellStyle}
-                  >
-                    <span className="font-medium">{format(day, "d")}</span>
-                    {!isAnonymous && count > 0 && (
-                      <span
-                        className="text-[9px] mt-0.5"
-                        style={{ opacity: isSelected ? 0.7 : 0.65 }}
-                      >
-                        {count}/{totalMembers}
-                      </span>
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+              {/* Bottom indicator */}
+              <div style={{ marginTop: 5, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {isSelected ? (
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%",
+                    background: "var(--tb-orange)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                ) : (!isAnonymous && count > 0) ? (
+                  <span style={{ fontSize: 10, color: "var(--tb-muted)", fontWeight: 500 }}>
+                    {count}/{totalMembers}
+                  </span>
+                ) : (
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(0,0,0,0.08)" }} />
+                )}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
     </div>
   );
 }
