@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
@@ -103,6 +103,11 @@ function MiniCalendar({ selectedRange, onSelectRange }: {
   const handleDayClick = (day: number) => {
     if (isPast(day)) return;
     const d = toDate(day);
+    // Clicking start date with no end → deselect
+    if (selectedRange?.from && !selectedRange.to && d.getTime() === selectedRange.from.getTime()) {
+      onSelectRange(undefined);
+      return;
+    }
     if (!selectedRange?.from || selectedRange.to) {
       onSelectRange({ from: d, to: undefined });
     } else {
@@ -187,13 +192,19 @@ function MiniCalendar({ selectedRange, onSelectRange }: {
         <div className="animate-fadeIn" style={{
           marginTop: 12, padding: "8px 12px", borderRadius: 10,
           background: "rgba(255,107,53,0.06)", border: "1px solid rgba(255,107,53,0.12)",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
         }}>
-          <span style={{ fontSize: 12 }}>📅</span>
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--tb-orange)" }}>
-            {selectedRange.from.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-            {selectedRange.to && ` → ${selectedRange.to.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12 }}>📅</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--tb-orange)" }}>
+              {selectedRange.from.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+              {selectedRange.to && ` → ${selectedRange.to.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
+            </span>
+          </div>
+          <button
+            onClick={() => onSelectRange(undefined)}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--tb-light)", fontWeight: 500, padding: "2px 6px" }}
+          >✕ Clear</button>
         </div>
       )}
     </div>
@@ -252,6 +263,18 @@ export default function NewTripPage() {
   const [nameFocused, setNameFocused] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [activeChip, setActiveChip] = useState(-1);
+  const calendarSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (calendarSectionRef.current && !calendarSectionRef.current.contains(e.target as Node)) {
+        setCalendarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [calendarOpen]);
   const [editingMsg, setEditingMsg] = useState(false);
   const [customMsg, setCustomMsg] = useState("");
   const [subtitleIdx, setSubtitleIdx] = useState(0);
@@ -614,7 +637,7 @@ export default function NewTripPage() {
               </div>
 
               {/* Date section */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div ref={calendarSectionRef} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <label style={{ fontSize: 14, fontWeight: 600, color: "var(--tb-text)", display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 15 }}>📅</span> When are you thinking?
                 </label>
