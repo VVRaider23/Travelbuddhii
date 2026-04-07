@@ -21,6 +21,8 @@ export function TripHeader() {
         background: "rgba(255,255,255,0.92)",
         borderBottom: "1px solid rgba(0,0,0,0.05)",
         backdropFilter: "blur(16px)",
+        maxWidth: 480,
+        margin: "0 auto",
       }}
     >
       <Link

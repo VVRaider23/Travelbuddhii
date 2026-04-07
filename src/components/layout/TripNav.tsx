@@ -24,6 +24,8 @@ export function TripNav({ slug }: { slug: string }) {
         borderTop: "1px solid rgba(0,0,0,0.05)",
         backdropFilter: "blur(16px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        maxWidth: 480,
+        margin: "0 auto",
       }}
     >
       <div className="flex">
