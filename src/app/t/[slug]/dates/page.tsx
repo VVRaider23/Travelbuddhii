@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { DateGrid } from "@/components/dates/DateGrid";
 import { BestDatesSummary } from "@/components/dates/BestDatesSummary";
 import { DateLockButton } from "@/components/dates/DateLockButton";
+import { SetDateWindow } from "@/components/dates/SetDateWindow";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 
 interface VoteRow {
@@ -254,9 +255,17 @@ export default function DatesPage() {
 
   if (!trip || !trip.date_window_start || !trip.date_window_end) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-gray-500 mt-8 text-sm">No date window set for this trip yet.</p>
-      </div>
+      <SetDateWindow
+        slug={slug}
+        isOrganizer={userRole === "organizer"}
+        onSet={(start, end) => {
+          setTrip((prev) =>
+            prev
+              ? { ...prev, date_window_start: start, date_window_end: end }
+              : { id: "", date_window_start: start, date_window_end: end, confirmed_start: null, confirmed_end: null, status: "gathering_inputs" }
+          );
+        }}
+      />
     );
   }
 
