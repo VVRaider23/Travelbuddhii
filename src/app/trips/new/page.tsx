@@ -728,20 +728,11 @@ export default function NewTripPage() {
                   />
                 )}
 
-                {/* Skip text */}
-                {activeChip === -1 && !calendarOpen && (
-                  <button
-                    onClick={() => {}}
-                    style={{
-                      background: "none", border: "none", cursor: "pointer",
-                      padding: "6px 0", display: "flex", alignItems: "center", gap: 5,
-                      fontSize: 13, color: "var(--tb-light)", fontWeight: 500,
-                      transition: "color 0.2s ease",
-                    }}
-                  >
-                    <span style={{ fontSize: 12 }}>⏭️</span>
-                    Skip — let the group decide dates later
-                  </button>
+                {/* Hint when no dates selected */}
+                {!dateRange?.from && tripName.trim() && (
+                  <p style={{ fontSize: 12.5, color: "var(--tb-light)", fontWeight: 500, display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ fontSize: 11 }}>👆</span> Pick dates to continue
+                  </p>
                 )}
               </div>
 
@@ -760,7 +751,7 @@ export default function NewTripPage() {
               {/* CTA — keep orange per user request */}
               <button
                 onClick={handleCreate}
-                disabled={loading || !tripName.trim()}
+                disabled={loading || !tripName.trim() || !dateRange?.from || !dateRange?.to}
                 className="w-full flex items-center justify-center gap-2.5 text-white font-bold text-[16px] rounded-[18px] transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0"
                 style={{
                   padding: "17px 24px",

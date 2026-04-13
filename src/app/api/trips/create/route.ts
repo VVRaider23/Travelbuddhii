@@ -7,8 +7,8 @@ import { z } from "zod";
 
 const CreateTripSchema = z.object({
   name: z.string().min(1).max(80),
-  date_window_start: z.string().optional(),
-  date_window_end: z.string().optional(),
+  date_window_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date_window_end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
 export async function POST(request: NextRequest) {
@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
       slug,
       name,
       created_by: user.id,
-      date_window_start: date_window_start ?? null,
-      date_window_end: date_window_end ?? null,
+      date_window_start,
+      date_window_end,
     })
     .select("id, slug")
     .single();
