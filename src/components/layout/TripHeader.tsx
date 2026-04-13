@@ -16,13 +16,15 @@ export function TripHeader() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 h-[52px] flex items-center justify-between px-4"
+    <header className="fixed top-0 z-40 h-[52px] flex items-center justify-between px-4"
       style={{
         background: "rgba(255,255,255,0.92)",
         borderBottom: "1px solid rgba(0,0,0,0.05)",
         backdropFilter: "blur(16px)",
+        width: "100%",
         maxWidth: 480,
-        margin: "0 auto",
+        left: "50%",
+        transform: "translateX(-50%)",
       }}
     >
       <Link

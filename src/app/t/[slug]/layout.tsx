@@ -61,7 +61,7 @@ export default async function TripLayout({ children, params }: Props) {
       confirmedEnd={trip.confirmed_end}
       members={members}
     >
-      <div className="flex flex-col min-h-screen" style={{ background: "var(--tb-cream)", maxWidth: 480, margin: "0 auto" }}>
+      <div className="flex flex-col min-h-screen" style={{ background: "var(--tb-cream)", width: "100%", maxWidth: 480, margin: "0 auto" }}>
         <TripHeader />
         <main className="flex-1 pt-[52px] pb-20">{children}</main>
         <ConditionalNav slug={slug} />

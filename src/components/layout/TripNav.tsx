@@ -18,14 +18,16 @@ export function TripNav({ slug }: { slug: string }) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 safe-area-pb z-40"
+      className="fixed bottom-0 safe-area-pb z-40"
       style={{
         background: "rgba(255,255,255,0.95)",
         borderTop: "1px solid rgba(0,0,0,0.05)",
         backdropFilter: "blur(16px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        width: "100%",
         maxWidth: 480,
-        margin: "0 auto",
+        left: "50%",
+        transform: "translateX(-50%)",
       }}
     >
       <div className="flex">
