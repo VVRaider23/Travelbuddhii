@@ -29,8 +29,8 @@ export function DateGrid({
   return (
     <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
       <div style={{
-        display: "flex", gap: 8,
-        paddingLeft: 16, paddingRight: 16,
+        display: "flex", gap: 10,
+        paddingLeft: 20, paddingRight: 20,
         paddingBottom: 4,
         width: "max-content",
       }}>
@@ -50,7 +50,7 @@ export function DateGrid({
               animate={isPulsing ? { scale: [1, 1.12, 1] } : {}}
               transition={{ duration: 0.2 }}
               style={{
-                width: 72, flexShrink: 0,
+                width: 76, flexShrink: 0,
                 padding: "12px 8px 10px",
                 borderRadius: 18,
                 background: "#fff",

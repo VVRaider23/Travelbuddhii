@@ -11,7 +11,7 @@ import { DateGrid } from "@/components/dates/DateGrid";
 import { BestDatesSummary } from "@/components/dates/BestDatesSummary";
 import { DateLockButton } from "@/components/dates/DateLockButton";
 import { SetDateWindow } from "@/components/dates/SetDateWindow";
-import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { DatesLoader } from "@/components/dates/DatesLoader";
 
 interface VoteRow {
   user_id: string;
@@ -251,7 +251,7 @@ export default function DatesPage() {
     });
   }
 
-  if (loading) return <PageSkeleton />;
+  if (loading) return <DatesLoader />;
 
   if (!trip || !trip.date_window_start || !trip.date_window_end) {
     return (
@@ -285,11 +285,11 @@ export default function DatesPage() {
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 100 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{
-        padding: "20px 16px 16px",
+        padding: "24px 20px 20px",
         background: "rgba(255,255,255,0.95)",
         borderBottom: "1px solid rgba(0,0,0,0.04)",
         display: "flex", flexDirection: "column", gap: 10,
@@ -354,13 +354,13 @@ export default function DatesPage() {
 
       {/* Quick-select chips */}
       {!isLocked && (
-        <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
           {QUICK_CHIPS.map((chip) => (
             <button
               key={chip.label}
               onClick={chip.action}
               style={{
-                padding: "10px 4px",
+                padding: "12px 6px",
                 borderRadius: 14,
                 border: "1.5px solid rgba(0,0,0,0.07)",
                 background: "#fff",
@@ -378,11 +378,11 @@ export default function DatesPage() {
 
       {/* "I'm free all days" button */}
       {!isLocked && (
-        <div style={{ padding: "0 16px" }}>
+        <div style={{ padding: "0 20px" }}>
           <button
             onClick={handleSelectAll}
             style={{
-              width: "100%", padding: "13px 16px",
+              width: "100%", padding: "14px 18px",
               borderRadius: 16,
               background: "rgba(0,0,0,0.03)",
               border: "1.5px solid rgba(0,0,0,0.06)",
@@ -397,7 +397,7 @@ export default function DatesPage() {
       )}
 
       {/* Date cards label */}
-      <div style={{ padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tb-muted)" }}>
           👆 Tap the days you&apos;re free
         </span>
@@ -457,7 +457,7 @@ export default function DatesPage() {
 
       {/* Save button */}
       {!isLocked && (
-        <div style={{ padding: "0 16px" }}>
+        <div style={{ padding: "0 20px" }}>
           <motion.button
             onClick={saved ? undefined : handleSave}
             disabled={saving || myDates.size === 0}
