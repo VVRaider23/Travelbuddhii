@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTripStore } from "@/store/tripStore";
 import { MemberAvatarRow } from "@/components/shared/MemberAvatarRow";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -95,10 +95,11 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
   const currentStage = stageIndex[trip.status];
   const [copied, setCopied] = useState(false);
   const [hoveredStep, setHoveredStep] = useState(-1);
+  const [shareUrl, setShareUrl] = useState(`/t/${slug}`);
 
-  const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/t/${slug}`
-    : `/t/${slug}`;
+  useEffect(() => {
+    setShareUrl(`${window.location.origin}/t/${slug}`);
+  }, [slug]);
 
   function handleCopy() {
     const url = typeof window !== "undefined" ? `${window.location.origin}/t/${slug}` : "";
