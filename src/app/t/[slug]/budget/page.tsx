@@ -252,6 +252,7 @@ export default function BudgetPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, paddingBottom: 160, background: "#F5F1EB", minHeight: "calc(100vh - 52px)" }}>
       <style>{`
+        body { background: #F5F1EB !important; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInCard { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
