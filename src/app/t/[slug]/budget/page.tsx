@@ -250,7 +250,7 @@ export default function BudgetPage() {
   const activeTier = BUDGET_TIERS.find((t) => t.id === selectedTier);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0, paddingBottom: 160 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0, paddingBottom: 160, background: "#F5F1EB", minHeight: "calc(100vh - 52px)" }}>
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -580,7 +580,7 @@ export default function BudgetPage() {
         width: "100%", maxWidth: 480,
         left: "50%", transform: "translateX(-50%)",
         padding: "12px 20px 0",
-        background: "linear-gradient(transparent, rgba(253,246,236,0.98) 40%)",
+        background: "linear-gradient(transparent, rgba(245,241,235,0.98) 40%)",
         pointerEvents: "none" as const,
       }}>
         <button
