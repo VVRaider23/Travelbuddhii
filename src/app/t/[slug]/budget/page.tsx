@@ -365,8 +365,15 @@ export default function BudgetPage() {
           <div style={{ padding: "0 20px" }}>
             <button
               onClick={() => {
-                setShowCustom(!showCustom);
-                if (!showCustom) { setSelectedTier("custom"); setIsDirty(true); setSaved(false); }
+                const willOpen = !showCustom;
+                setShowCustom(willOpen);
+                if (willOpen) {
+                  setSelectedTier("custom");
+                  setIsDirty(true);
+                  setSaved(false);
+                } else if (selectedTier === "custom") {
+                  setSelectedTier(null);
+                }
               }}
               style={{
                 width: "100%", padding: "12px 16px", borderRadius: 14,
@@ -504,15 +511,16 @@ export default function BudgetPage() {
         </div>
 
         {/* ── Trip personality card ── */}
-        {selectedTier && selectedTier !== "custom" && vibes.length > 0 && activeTier && (() => {
+        {selectedTier && vibes.length > 0 && (() => {
+          const tier = activeTier || { label: "Custom", color: "#00A8A8" };
           const vibeLabels = vibes.map((v) => ALL_VIBES.find((vb) => vb.id === v)).filter(Boolean) as typeof ALL_VIBES;
           const vibeNames = vibeLabels.map((v) => v.label.toLowerCase()).join(" + ");
           const vibeEmojis = vibeLabels.map((v) => v.emoji).join("");
           return (
             <div style={{
               margin: "0 20px", padding: 16, borderRadius: 18,
-              background: `linear-gradient(145deg, ${activeTier.color}06, ${activeTier.color}03)`,
-              border: `1.5px solid ${activeTier.color}15`,
+              background: `linear-gradient(145deg, ${tier.color}06, ${tier.color}03)`,
+              border: `1.5px solid ${tier.color}15`,
               animation: "fadeUp 0.4s ease-out both",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
@@ -520,7 +528,7 @@ export default function BudgetPage() {
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tb-text)" }}>Your trip personality</span>
               </div>
               <p style={{ fontSize: 14, color: "var(--tb-text)", lineHeight: 1.5 }}>
-                You&apos;re looking for a <strong style={{ color: activeTier.color }}>{activeTier.label.toLowerCase()}</strong> {vibeNames} trip {vibeEmojis}
+                You&apos;re looking for a <strong style={{ color: tier.color }}>{tier.label.toLowerCase()}</strong> {vibeNames} trip {vibeEmojis}
               </p>
               <p style={{ fontSize: 12, color: "var(--tb-muted)", marginTop: 4 }}>
                 {getSuggestions(vibes)} 💡
