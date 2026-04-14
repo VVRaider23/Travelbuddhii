@@ -96,7 +96,7 @@ export default function DatesPage() {
   const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
-    const minDelay = new Promise((r) => setTimeout(r, 1500));
+    const minDelay = new Promise((r) => setTimeout(r, 3000));
 
     Promise.all([
       fetch(`/api/trips/${slug}/dates`).then((r) => r.json()),
