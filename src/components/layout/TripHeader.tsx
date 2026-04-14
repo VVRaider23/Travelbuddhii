@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useTripStore } from "@/store/tripStore";
@@ -27,13 +26,13 @@ export function TripHeader() {
         transform: "translateX(-50%)",
       }}
     >
-      <Link
-        href="/"
+      <button
+        onClick={() => router.back()}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[13px] font-medium"
-        style={{ color: "var(--tb-light)" }}
+        style={{ color: "var(--tb-light)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
       >
-        ← Home
-      </Link>
+        ← Back
+      </button>
 
       <div className="flex items-center gap-1.5 max-w-[200px] overflow-hidden">
         <div
