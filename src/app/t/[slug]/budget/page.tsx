@@ -529,7 +529,7 @@ export default function BudgetPage() {
         })()}
 
         {/* ── Group pulse ── */}
-        {data && (data.respondedCount >= 1) && (() => {
+        {data && (() => {
           const rc = data.respondedCount;
           const tm = data.totalMembers;
           const msg = rc === 0
@@ -580,7 +580,7 @@ export default function BudgetPage() {
         width: "100%", maxWidth: 480,
         left: "50%", transform: "translateX(-50%)",
         padding: "12px 20px 0",
-        background: "linear-gradient(transparent, rgba(245,241,235,0.98) 40%)",
+        background: "linear-gradient(transparent, rgba(253,246,236,0.98) 40%)",
         pointerEvents: "none" as const,
       }}>
         <button
