@@ -94,6 +94,9 @@ interface TripStore {
   datePollDeadline: string | null;
 
   // Budget
+  budgetMin: number | null;
+  budgetMax: number | null;
+  tripVibes: string[];
   myBudgetVote: { min: number; max: number } | null;
   myVibes: string[];
   groupBudgetOverlap: { min: number; max: number } | null;
@@ -139,6 +142,9 @@ export const useTripStore = create<TripStore>((set) => ({
   heatmap: {},
   isAnonymous: false,
   datePollDeadline: null,
+  budgetMin: null,
+  budgetMax: null,
+  tripVibes: [],
   myBudgetVote: null,
   myVibes: [],
   groupBudgetOverlap: null,

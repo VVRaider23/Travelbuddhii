@@ -2,11 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOpenAI } from "@/lib/openai";
-import { searchPlace, buildPhotoUrl } from "@/lib/places";
-import { DestinationSuggestionSchema } from "@/types/ai";
-import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from "zod";
+import {
+  recommend,
+  type CatalogEntry,
+  type OffbeatExperience,
+  type RecommendationContext,
+} from "@/lib/recommendation";
 
 export async function POST(
   _request: NextRequest,
@@ -38,7 +39,7 @@ export async function POST(
   // Fetch trip context
   const { data: trip } = await admin
     .from("trips")
-    .select("id, status, confirmed_start, confirmed_end, budget_min, budget_max, vibes, date_window_start, date_window_end")
+    .select("id, status, confirmed_start, confirmed_end, budget_min, budget_max, vibes, interest_tags, departing_city, date_window_start, date_window_end")
     .eq("slug", slug)
     .single();
 
@@ -62,95 +63,79 @@ export async function POST(
     .select("*", { count: "exact", head: true })
     .eq("trip_id", trip.id);
 
-  // Get budget overlap from budget_votes if trip.budget_min/max not set
-  let budgetMin = trip.budget_min ?? 20000;
-  let budgetMax = trip.budget_max ?? 40000;
-
+  // Build recommendation context
+  const budgetMin = trip.budget_min ?? 20000;
+  const budgetMax = trip.budget_max ?? 40000;
   const startDate = trip.confirmed_start ?? trip.date_window_start;
-  const endDate = trip.confirmed_end ?? trip.date_window_end;
 
-  let nights = 3;
-  if (startDate && endDate) {
-    const s = new Date(startDate);
-    const e = new Date(endDate);
-    nights = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+  // Extract travel month (0-indexed)
+  let month = new Date().getMonth(); // default to current month
+  if (startDate) {
+    month = new Date(startDate).getMonth();
   }
 
-  const vibesList = (trip.vibes ?? []).join(", ") || "adventure, nature";
+  const ctx: RecommendationContext = {
+    month,
+    vibes: trip.vibes ?? [],
+    interestTags: trip.interest_tags ?? [],
+    budgetMin,
+    budgetMax,
+    memberCount: memberCount ?? 5,
+    departingCity: trip.departing_city ?? undefined,
+  };
 
-  // Call GPT-4o-mini with structured output
-  const openai = getOpenAI();
+  // Fetch catalog + offbeat data in parallel
+  const [catalogRes, offbeatRes] = await Promise.all([
+    admin.from("destination_catalog").select("*"),
+    admin.from("offbeat_experiences").select("*"),
+  ]);
 
-  let parsed;
-  try {
-    const completion = await openai.chat.completions.parse({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert Indian travel planner for domestic leisure trips.
-Rules: ASI monuments close Mondays. Indian road travel = Google Maps × 2.5. Always include veg + non-veg options. Monsoon (Jun-Aug) limits hill station/coastal access. Return ONLY valid JSON matching the schema.`,
-        },
-        {
-          role: "user",
-          content: `Plan for ${memberCount ?? 5} Indian friends (25-35).
-Budget: ₹${budgetMin}–${budgetMax}/person. Duration: ${nights} nights.
-Vibes: ${vibesList}. Dates: ${startDate ?? "flexible"}–${endDate ?? "flexible"}.
-Departing from: India (major city).
-Suggest 3-5 destinations within India with per-person all-inclusive cost estimate (NOT flights).`,
-        },
-      ],
-      response_format: zodResponseFormat(DestinationSuggestionSchema, "destinations"),
-    });
+  const catalog: CatalogEntry[] = catalogRes.data ?? [];
+  const offbeatAll: OffbeatExperience[] = offbeatRes.data ?? [];
 
-    parsed = completion.choices[0].message.parsed;
-  } catch (err) {
-    console.error("GPT error:", err);
-    return NextResponse.json({ error: "AI generation failed. Try again." }, { status: 500 });
+  // Group offbeat by destination name
+  const offbeatByDest: Record<string, OffbeatExperience[]> = {};
+  for (const exp of offbeatAll) {
+    if (!offbeatByDest[exp.destination]) offbeatByDest[exp.destination] = [];
+    offbeatByDest[exp.destination].push(exp);
   }
 
-  if (!parsed) return NextResponse.json({ error: "Invalid AI response" }, { status: 500 });
+  // Run recommendation engine
+  const recommendations = recommend(catalog, offbeatByDest, ctx, 5);
 
-  // Validate places via Google Places API + fetch photos (parallel, non-fatal)
-  const destinationsWithPlaces = await Promise.all(
-    parsed.destinations.map(async (dest) => {
-      const placeResult = await searchPlace(dest.name, dest.state ?? "India");
-      return {
-        ...dest,
-        google_place_id: placeResult?.placeId ?? null,
-        photo_url: placeResult?.photoName
-          ? buildPhotoUrl(placeResult.photoName)
-          : null,
-        coordinates: placeResult
-          ? `(${placeResult.lng},${placeResult.lat})`
-          : null,
-      };
-    })
-  );
+  if (recommendations.length === 0) {
+    return NextResponse.json({ error: "No destinations match your preferences for this time of year. Try adjusting dates or vibes." }, { status: 400 });
+  }
 
   // Delete old AI destinations and insert new ones
   await admin.from("destinations").delete().eq("trip_id", trip.id).eq("ai_generated", true);
 
-  const toInsert = destinationsWithPlaces.map((d) => ({
+  const toInsert = recommendations.map((d) => ({
     trip_id: trip.id,
     name: d.name,
     pitch: d.pitch,
-    estimated_cost_min: d.estimated_cost_min,
-    estimated_cost_max: d.estimated_cost_max,
+    estimated_cost_min: d.cost_min,
+    estimated_cost_max: d.cost_max,
     pros: d.pros,
     cons: d.cons,
-    travel_options: d.travel_options,
+    travel_options: d.travelFromCity ? [d.travelFromCity] : d.travel_options.slice(0, 3),
     google_place_id: d.google_place_id,
+    photo_url: d.photo_url,
+    coordinates: d.lat && d.lng ? `(${d.lng},${d.lat})` : null,
     ai_generated: true,
+    offbeat_experiences: d.offbeat,
+    seasonality_note: d.seasonNote,
   }));
 
   const { data: inserted } = await admin.from("destinations").insert(toInsert).select("*");
 
-  // Merge photo_urls back (not in DB — returned only in this response)
+  // Merge extra fields back for response
   const result = (inserted ?? []).map((row: { id: string; name: string }, i: number) => ({
     ...row,
-    photo_url: destinationsWithPlaces[i]?.photo_url ?? null,
-    why_fits_group: destinationsWithPlaces[i]?.why_fits_group ?? null,
+    photo_url: recommendations[i]?.photo_url ?? null,
+    why_fits_group: recommendations[i]?.whyFitsGroup ?? null,
+    season_score: recommendations[i]?.seasonScore ?? null,
+    offbeat_experiences: recommendations[i]?.offbeat ?? [],
   }));
 
   // Log event

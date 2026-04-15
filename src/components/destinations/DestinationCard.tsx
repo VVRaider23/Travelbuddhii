@@ -4,9 +4,18 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface TravelOption {
+  from?: string;
   mode: string;
   duration_hours: number;
-  approximate_cost_inr: number;
+  approximate_cost_inr?: number;
+  cost_inr?: number;
+}
+
+interface OffbeatExperience {
+  name: string;
+  description: string;
+  category: string;
+  local_tip?: string;
 }
 
 interface Destination {
@@ -20,6 +29,9 @@ interface Destination {
   travel_options: TravelOption[];
   photo_url?: string | null;
   why_fits_group?: string | null;
+  season_score?: number | null;
+  seasonality_note?: string | null;
+  offbeat_experiences?: OffbeatExperience[];
 }
 
 const MODE_ICONS: Record<string, string> = {
@@ -76,6 +88,21 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
         )}
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        {/* Seasonality badge */}
+        {dest.season_score != null && (
+          <div
+            className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-sm text-xs font-semibold"
+            style={{
+              background: dest.season_score >= 4 ? "rgba(34,197,94,0.85)"
+                : dest.season_score === 3 ? "rgba(245,158,11,0.85)"
+                : "rgba(239,68,68,0.85)",
+              color: "#fff",
+            }}
+          >
+            <span>{dest.season_score >= 4 ? "🟢" : dest.season_score === 3 ? "🟡" : "🔴"}</span>
+            {dest.season_score >= 5 ? "Peak season" : dest.season_score >= 4 ? "Great time" : dest.season_score === 3 ? "Shoulder season" : "Off-season"}
+          </div>
+        )}
         {/* Destination name */}
         <div className="absolute bottom-3 left-4 right-4">
           <div className="flex items-end justify-between">
@@ -116,6 +143,40 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
           >
             <span className="text-base shrink-0">✨</span>
             <p className="text-xs leading-relaxed" style={{ color: "var(--tb-text)" }}>{dest.why_fits_group}</p>
+          </div>
+        )}
+
+        {/* Seasonality note */}
+        {dest.seasonality_note && (
+          <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.1)" }}>
+            <span>📅</span>
+            <span style={{ color: "var(--tb-muted)" }}>{dest.seasonality_note}</span>
+          </div>
+        )}
+
+        {/* Offbeat experiences */}
+        {dest.offbeat_experiences && dest.offbeat_experiences.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs">💎</span>
+              <span className="text-xs font-semibold" style={{ color: "var(--tb-text)" }}>Hidden gems</span>
+            </div>
+            {dest.offbeat_experiences.map((exp) => (
+              <div
+                key={exp.name}
+                className="rounded-xl px-3 py-2.5"
+                style={{ background: "linear-gradient(145deg, rgba(0,168,168,0.04), rgba(0,168,168,0.02))", border: "1px solid rgba(0,168,168,0.08)" }}
+              >
+                <div className="text-xs font-semibold" style={{ color: "var(--tb-teal-dark, #006666)" }}>{exp.name}</div>
+                <div className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--tb-muted)" }}>{exp.description}</div>
+                {exp.local_tip && (
+                  <div className="text-xs mt-1 flex items-start gap-1" style={{ color: "var(--tb-light)" }}>
+                    <span>🤫</span>
+                    <span className="italic">{exp.local_tip}</span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
@@ -170,18 +231,28 @@ export function DestinationCard({ destination: dest, rank, showRank, isDragging,
 
                 {/* Travel options */}
                 {dest.travel_options && dest.travel_options.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {dest.travel_options.map((t) => (
-                      <div
-                        key={t.mode}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
-                        style={{ backgroundColor: "var(--tb-cream)", border: "1px solid var(--tb-sand)", color: "var(--tb-muted)" }}
-                      >
-                        <span>{MODE_ICONS[t.mode] ?? "🚀"}</span>
-                        <span className="capitalize">{t.mode}</span>
-                        <span style={{ color: "var(--tb-light)" }}>{t.duration_hours}h</span>
-                      </div>
-                    ))}
+                  <div>
+                    {dest.travel_options[0]?.from && (
+                      <p className="text-xs font-medium mb-1.5" style={{ color: "var(--tb-light)" }}>
+                        From {dest.travel_options[0].from}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {dest.travel_options.map((t, i) => (
+                        <div
+                          key={`${t.mode}-${i}`}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full"
+                          style={{ backgroundColor: "var(--tb-cream)", border: "1px solid var(--tb-sand)", color: "var(--tb-muted)" }}
+                        >
+                          <span>{MODE_ICONS[t.mode] ?? "🚀"}</span>
+                          <span className="capitalize">{t.mode}</span>
+                          <span style={{ color: "var(--tb-light)" }}>{t.duration_hours}h</span>
+                          {(t.cost_inr || t.approximate_cost_inr) && (
+                            <span style={{ color: "var(--tb-light)" }}>{formatINR(t.cost_inr ?? t.approximate_cost_inr ?? 0)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

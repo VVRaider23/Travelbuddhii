@@ -8,6 +8,7 @@ const BudgetSchema = z.object({
   budget_min: z.number().int().min(1000).max(1000000),
   budget_max: z.number().int().min(1000).max(1000000),
   vibes: z.array(z.string()).min(1).max(8),
+  interest_tags: z.array(z.string()).max(20).optional(),
 });
 
 async function getSupabase() {
@@ -46,7 +47,7 @@ export async function GET(
 
   const [{ data: budgetVotes }, { data: vibeVotes }, { data: members }] = await Promise.all([
     admin.from("budget_votes").select("user_id, budget_min, budget_max").eq("trip_id", trip.id),
-    admin.from("vibe_votes").select("user_id, vibes").eq("trip_id", trip.id),
+    admin.from("vibe_votes").select("user_id, vibes, interest_tags").eq("trip_id", trip.id),
     admin.from("trip_members").select("user_id").eq("trip_id", trip.id),
   ]);
 
@@ -73,11 +74,14 @@ export async function GET(
 
   // My vote
   const myBudget = votes.find((v: { user_id: string }) => v.user_id === user.id) ?? null;
-  const myVibes = (vibeVotes ?? []).find((v: { user_id: string }) => v.user_id === user.id)?.vibes ?? [];
+  const myVibeVote = (vibeVotes ?? []).find((v: { user_id: string }) => v.user_id === user.id);
+  const myVibes = myVibeVote?.vibes ?? [];
+  const myInterestTags = myVibeVote?.interest_tags ?? [];
 
   return NextResponse.json({
     myBudget,
     myVibes,
+    myInterestTags,
     overlap,
     vibeCount,
     respondedCount: votes.length,
@@ -147,13 +151,18 @@ export async function POST(
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const vibeUpdate = {
+    vibes: parsed.data.vibes,
+    interest_tags: parsed.data.interest_tags ?? [],
+  };
+
   if (existingVibe) {
-    await admin.from("vibe_votes").update({ vibes: parsed.data.vibes }).eq("id", existingVibe.id);
+    await admin.from("vibe_votes").update(vibeUpdate).eq("id", existingVibe.id);
   } else {
     await admin.from("vibe_votes").insert({
       trip_id: trip.id,
       user_id: user.id,
-      vibes: parsed.data.vibes,
+      ...vibeUpdate,
     });
   }
 
@@ -178,20 +187,28 @@ export async function POST(
     }).eq("id", trip.id);
   }
 
-  // Update trip vibes (top-voted)
-  const { data: allVibes } = await admin.from("vibe_votes").select("vibes").eq("trip_id", trip.id);
+  // Update trip vibes + interest_tags (top-voted)
+  const { data: allVibes } = await admin.from("vibe_votes").select("vibes, interest_tags").eq("trip_id", trip.id);
   const vibeCount: Record<string, number> = {};
+  const tagCount: Record<string, number> = {};
   for (const v of allVibes ?? []) {
     for (const vibe of v.vibes) {
       vibeCount[vibe] = (vibeCount[vibe] ?? 0) + 1;
+    }
+    for (const tag of v.interest_tags ?? []) {
+      tagCount[tag] = (tagCount[tag] ?? 0) + 1;
     }
   }
   const topVibes = Object.entries(vibeCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([v]) => v);
+  const topTags = Object.entries(tagCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([t]) => t);
 
-  await admin.from("trips").update({ vibes: topVibes }).eq("id", trip.id);
+  await admin.from("trips").update({ vibes: topVibes, interest_tags: topTags }).eq("id", trip.id);
 
   return NextResponse.json({ ok: true });
 }

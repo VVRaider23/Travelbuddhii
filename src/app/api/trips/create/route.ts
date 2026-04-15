@@ -9,6 +9,7 @@ const CreateTripSchema = z.object({
   name: z.string().min(1).max(80),
   date_window_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   date_window_end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  departing_city: z.string().max(50).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const { name, date_window_start, date_window_end } = parsed.data;
+  const { name, date_window_start, date_window_end, departing_city } = parsed.data;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = createAdminClient() as any;
 
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
       created_by: user.id,
       date_window_start,
       date_window_end,
+      ...(departing_city ? { departing_city } : {}),
     })
     .select("id, slug")
     .single();

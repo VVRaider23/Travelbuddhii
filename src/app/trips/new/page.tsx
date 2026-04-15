@@ -263,6 +263,7 @@ export default function NewTripPage() {
   const [nameFocused, setNameFocused] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [activeChip, setActiveChip] = useState(-1);
+  const [departingCity, setDepartingCity] = useState("");
   const calendarSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -334,6 +335,7 @@ export default function NewTripPage() {
         date_window_end: dateRange?.to
           ? format(dateRange.to, "yyyy-MM-dd")
           : undefined,
+        ...(departingCity ? { departing_city: departingCity } : {}),
       }),
     });
 
@@ -733,6 +735,48 @@ export default function NewTripPage() {
                   <p style={{ fontSize: 12.5, color: "var(--tb-light)", fontWeight: 500, display: "flex", alignItems: "center", gap: 5 }}>
                     <span style={{ fontSize: 11 }}>👆</span> Pick dates to continue
                   </p>
+                )}
+              </div>
+
+              {/* Departing city */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "var(--tb-text)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 14 }}>🚀</span> Departing from
+                  <span style={{ fontSize: 11, fontWeight: 400, color: "var(--tb-light)" }}>(optional)</span>
+                </label>
+                <div style={{
+                  borderRadius: 16, overflow: "hidden", background: "#fff",
+                  border: `2px solid ${departingCity ? "var(--tb-teal, #00A8A8)" : "rgba(0,0,0,0.06)"}`,
+                  boxShadow: departingCity ? "0 0 0 4px rgba(0,168,168,0.06)" : "0 1px 4px rgba(0,0,0,0.03)",
+                  transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+                }}>
+                  <select
+                    value={departingCity}
+                    onChange={(e) => setDepartingCity(e.target.value)}
+                    style={{
+                      width: "100%", padding: "14px 18px", fontSize: 15,
+                      fontWeight: 500, color: departingCity ? "var(--tb-text)" : "var(--tb-light)",
+                      border: "none", outline: "none", background: "transparent",
+                      cursor: "pointer", fontFamily: "inherit",
+                      WebkitAppearance: "none", appearance: "none",
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 16px center",
+                    }}
+                  >
+                    <option value="">Select your city</option>
+                    {["Delhi", "Mumbai", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad", "Jaipur", "Lucknow", "Kochi", "Chandigarh", "Guwahati", "Indore", "Coimbatore"].map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+                {departingCity && (
+                  <div className="animate-fadeIn" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="#00A8A8">
+                      <path d="M8 0a8 8 0 110 16A8 8 0 018 0zm3.41 5.29a.75.75 0 00-1.06-1.06L7 7.59 5.65 6.24a.75.75 0 10-1.06 1.06l1.88 1.88a.75.75 0 001.06 0l3.88-3.89z"/>
+                    </svg>
+                    <span style={{ fontSize: 12, color: "#00A8A8", fontWeight: 500 }}>Travel options from {departingCity}</span>
+                  </div>
                 )}
               </div>
 

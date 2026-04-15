@@ -66,9 +66,21 @@ const VIBE_GROUPS = [
 
 const ALL_VIBES = VIBE_GROUPS.flatMap((g) => g.vibes);
 
+const INTEREST_TAGS_MAP: Record<string, { tags: string[]; emoji: string }> = {
+  beach: { emoji: "🏖️", tags: ["water sports", "secluded beaches", "coastal drives", "island hopping", "sunset spots"] },
+  mountains: { emoji: "⛰️", tags: ["trekking", "snow", "hill station", "valley views", "camping"] },
+  nightlife: { emoji: "🎉", tags: ["clubs", "live music", "rooftop bars", "pub crawl", "brewery tours"] },
+  culture: { emoji: "🏛️", tags: ["heritage walks", "religious sites", "local festivals", "crafts", "museums"] },
+  adventure: { emoji: "🧗", tags: ["trekking", "paragliding", "rafting", "wildlife safari", "camping", "scuba diving"] },
+  chill: { emoji: "😴", tags: ["spa/wellness", "cafe hopping", "sunset spots", "lake views", "yoga retreats"] },
+  food: { emoji: "🍜", tags: ["street food", "cooking class", "local cuisine", "food crawl", "fine dining"] },
+  nature: { emoji: "🌿", tags: ["wildlife", "waterfalls", "forests", "offbeat villages", "birdwatching"] },
+};
+
 interface BudgetData {
   myBudget: { budget_min: number; budget_max: number } | null;
   myVibes: string[];
+  myInterestTags: string[];
   overlap: { min: number; max: number } | null;
   vibeCount: Record<string, number>;
   respondedCount: number;
@@ -174,6 +186,7 @@ export default function BudgetPage() {
   const [showCustom, setShowCustom] = useState(false);
   const [tappedTier, setTappedTier] = useState<string | null>(null);
   const [tappedVibe, setTappedVibe] = useState<string | null>(null);
+  const [interestTags, setInterestTags] = useState<string[]>([]);
 
   /* fetch */
   useEffect(() => {
@@ -191,6 +204,7 @@ export default function BudgetPage() {
         if (tid === "custom") setShowCustom(true);
       }
       if (d.myVibes?.length > 0) setVibes(d.myVibes);
+      if (d.myInterestTags?.length > 0) setInterestTags(d.myInterestTags);
       setLoading(false);
     }).catch(() => {
       toast.error("Could not load budget data");
@@ -208,7 +222,7 @@ export default function BudgetPage() {
     const res = await fetch(`/api/trips/${slug}/budget`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ budget_min, budget_max, vibes }),
+      body: JSON.stringify({ budget_min, budget_max, vibes, interest_tags: interestTags }),
     });
     const body = await res.json();
     setSaving(false);
@@ -508,6 +522,68 @@ export default function BudgetPage() {
               </span>
             </div>
           )}
+
+          {/* ── Interest tags (contextual sub-tags) ── */}
+          {vibes.length > 0 && (() => {
+            const availableTags = vibes.flatMap((v) => {
+              const group = INTEREST_TAGS_MAP[v];
+              return group ? group.tags.map((t) => ({ tag: t, vibe: v, emoji: group.emoji })) : [];
+            });
+            // Deduplicate tags
+            const seen = new Set<string>();
+            const uniqueTags = availableTags.filter((t) => {
+              if (seen.has(t.tag)) return false;
+              seen.add(t.tag);
+              return true;
+            });
+            if (uniqueTags.length === 0) return null;
+            return (
+              <div style={{ marginTop: 16, animation: "fadeUp 0.4s ease-out both" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 14 }}>🎯</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tb-text)" }}>Refine your vibe</span>
+                  <span style={{ fontSize: 11, color: "var(--tb-light)", fontWeight: 400 }}>(optional)</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {uniqueTags.map(({ tag }) => {
+                    const isSelected = interestTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => {
+                          setInterestTags((prev) =>
+                            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                          );
+                          setIsDirty(true);
+                          setSaved(false);
+                        }}
+                        style={{
+                          padding: "7px 14px", borderRadius: 100,
+                          border: `1.5px solid ${isSelected ? "var(--tb-teal, #00A8A8)" : "rgba(0,0,0,0.06)"}`,
+                          background: isSelected ? "rgba(0,168,168,0.08)" : "#fff",
+                          color: isSelected ? "#008B8B" : "var(--tb-muted)",
+                          fontSize: 12, fontWeight: isSelected ? 600 : 500,
+                          cursor: "pointer", fontFamily: "inherit",
+                          transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+                          transform: isSelected ? "scale(1.02)" : "scale(1)",
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+                {interestTags.length > 0 && (
+                  <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4, animation: "fadeIn 0.3s ease both" }}>
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#00A8A8" }} />
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#00A8A8" }}>
+                      {interestTags.length} tag{interestTags.length !== 1 ? "s" : ""} selected — helps find hidden gems
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Trip personality card ── */}

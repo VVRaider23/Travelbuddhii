@@ -59,6 +59,9 @@ export default async function TripLayout({ children, params }: Props) {
       dateWindowEnd={trip.date_window_end}
       confirmedStart={trip.confirmed_start}
       confirmedEnd={trip.confirmed_end}
+      budgetMin={trip.budget_min ?? null}
+      budgetMax={trip.budget_max ?? null}
+      tripVibes={trip.vibes ?? []}
       members={members}
     >
       <div className="flex flex-col min-h-screen" style={{ background: "var(--tb-cream)", width: "100%", maxWidth: 480, margin: "0 auto" }}>
