@@ -336,6 +336,7 @@ export default function DestinationsPage() {
                       onToggleVote={isLocked ? undefined : () => togglePick(dest.id)}
                       voteCount={voterCount > 0 ? (data?.voteCounts[dest.id] ?? 0) : undefined}
                       revealDelay={0.08 * i}
+                      saving={saving}
                     />
                   </div>
                 );

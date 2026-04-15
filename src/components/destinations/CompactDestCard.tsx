@@ -73,6 +73,7 @@ interface Props {
   onToggleVote?: () => void;
   voteCount?: number;
   revealDelay?: number;
+  saving?: boolean;
 }
 
 export function CompactDestCard({
@@ -84,6 +85,7 @@ export function CompactDestCard({
   onToggleVote,
   voteCount,
   revealDelay = 0,
+  saving,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
 
@@ -140,17 +142,25 @@ export function CompactDestCard({
 
           {/* Vote button */}
           {onToggleVote && (
-            <button onClick={(e) => { e.stopPropagation(); onToggleVote(); }} style={{
+            <button onClick={(e) => { e.stopPropagation(); if (!saving) onToggleVote(); }} style={{
               width: 34, height: 34, borderRadius: 10, border: "none",
               background: isVoted ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.15)",
-              cursor: "pointer",
+              cursor: saving ? "wait" : "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
               transform: isVoted ? "scale(1.05)" : "scale(1)",
             }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill={isVoted ? "#EF4444" : "none"} stroke={isVoted ? "#EF4444" : "rgba(255,255,255,0.8)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
+              {saving && isVoted ? (
+                <span style={{
+                  display: "inline-block", width: 16, height: 16,
+                  border: "2px solid rgba(239,68,68,0.25)", borderTopColor: "#EF4444",
+                  borderRadius: "50%", animation: "spin 0.7s linear infinite",
+                }} />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill={isVoted ? "#EF4444" : "none"} stroke={isVoted ? "#EF4444" : "rgba(255,255,255,0.8)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              )}
             </button>
           )}
 
