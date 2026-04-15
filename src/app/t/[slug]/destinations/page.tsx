@@ -114,7 +114,6 @@ export default function DestinationsPage() {
 
   // Auto-save picks (debounced)
   const savePicks = useCallback(async (newPicks: string[]) => {
-    if (newPicks.length === 0) return;
     setSaving(true);
     const res = await fetch(`/api/trips/${slug}/destinations/vote`, {
       method: "POST",
@@ -145,9 +144,7 @@ export default function DestinationsPage() {
 
       // Debounced auto-save
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      if (next.length > 0) {
-        saveTimerRef.current = setTimeout(() => savePicks(next), 600);
-      }
+      saveTimerRef.current = setTimeout(() => savePicks(next), 600);
 
       return next;
     });
@@ -302,13 +299,13 @@ export default function DestinationsPage() {
                 display: "flex", alignItems: "center", gap: 8,
                 animation: "fadeIn 0.4s ease-out both",
               }}>
-                <span style={{ fontSize: 15 }}>{hasVoted ? "\u2705" : "\u2764\uFE0F"}</span>
+                <span style={{ fontSize: 15 }}>{hasVoted ? "\u2705" : "\uD83D\uDC46"}</span>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: hasVoted ? "#1EBD5A" : "#FF6B35" }}>
                   {saving
                     ? "Saving your vote..."
                     : hasVoted
-                      ? `You picked ${picks.length}/2 \u2014 ${voterCount}/${memberCount} have voted`
-                      : "Tap the \u2764\uFE0F on your top 2 picks"}
+                      ? `${picks.length}/2 picked \u00B7 ${voterCount}/${memberCount} have voted`
+                      : "Pick your top 2 favourites"}
                 </span>
               </div>
             )}

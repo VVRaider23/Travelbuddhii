@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { z } from "zod";
 
 const PicksSchema = z.object({
-  picks: z.array(z.string().uuid()).min(1).max(2),
+  picks: z.array(z.string().uuid()).max(2),
 });
 
 async function getSupabase() {
@@ -105,21 +105,24 @@ export async function POST(
     .maybeSingle();
   if (!membership) return NextResponse.json({ error: "Not a member" }, { status: 403 });
 
-  // Delete old votes, insert new picks
+  // Delete old votes
   await admin
     .from("destination_votes")
     .delete()
     .eq("trip_id", trip.id)
     .eq("user_id", user.id);
 
-  await admin.from("destination_votes").insert(
-    parsed.data.picks.map((destId: string) => ({
-      trip_id: trip.id,
-      user_id: user.id,
-      destination_id: destId,
-      rank: 1,
-    }))
-  );
+  // Insert new picks (if any)
+  if (parsed.data.picks.length > 0) {
+    await admin.from("destination_votes").insert(
+      parsed.data.picks.map((destId: string) => ({
+        trip_id: trip.id,
+        user_id: user.id,
+        destination_id: destId,
+        rank: 1,
+      }))
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
