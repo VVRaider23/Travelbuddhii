@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOpenAI } from "@/lib/openai";
 import { validatePlaces } from "@/lib/places";
+import { datesInRange } from "@/lib/dateOverlap";
 import { ItinerarySchema } from "@/types/ai";
 
 export async function POST(
@@ -60,9 +61,10 @@ export async function POST(
   const endDate = trip.confirmed_end;
   let days = 3;
   if (startDate && endDate) {
-    const s = new Date(startDate);
-    const e = new Date(endDate);
-    days = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+    // Both ends are days on the trip, so Sep 2 to Sep 7 is six days, not five.
+    // This used to compute nights and hand them over as days, which cut a day
+    // off every generated plan.
+    days = Math.max(1, datesInRange(startDate, endDate).length);
   } else {
     const body = await request.json().catch(() => ({}));
     if (body.customDays && typeof body.customDays === "number") {

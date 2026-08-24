@@ -4,9 +4,14 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { parseISO, format, differenceInDays, eachDayOfInterval, getDay } from "date-fns";
+import { parseISO, format, eachDayOfInterval, getDay } from "date-fns";
 import { useTripStore } from "@/store/tripStore";
 import { createClient } from "@/lib/supabase/client";
+import {
+  computeHeatmap,
+  bestConsensusRanges,
+  type DateVote,
+} from "@/lib/dateOverlap";
 import { DateGrid } from "@/components/dates/DateGrid";
 import { BestDatesSummary } from "@/components/dates/BestDatesSummary";
 import { DateLockButton } from "@/components/dates/DateLockButton";
@@ -14,11 +19,8 @@ import { SetDateWindow } from "@/components/dates/SetDateWindow";
 import { DatesLoader } from "@/components/dates/DatesLoader";
 import { StepFooter } from "@/components/layout/StepFooter";
 
-interface VoteRow {
-  user_id: string;
-  date: string;
-  is_available: boolean;
-}
+/** Same shape the consensus rules work on, kept under the local name. */
+type VoteRow = DateVote;
 
 interface Member {
   user_id: string;
@@ -32,47 +34,6 @@ interface TripInfo {
   confirmed_start: string | null;
   confirmed_end: string | null;
   status: string;
-}
-
-function computeHeatmap(votes: VoteRow[]): Record<string, number> {
-  const map: Record<string, number> = {};
-  for (const v of votes) {
-    if (v.is_available) {
-      map[v.date] = (map[v.date] ?? 0) + 1;
-    }
-  }
-  return map;
-}
-
-function findBestRanges(heatmap: Record<string, number>, minCount: number) {
-  const dates = Object.entries(heatmap)
-    .filter(([, c]) => c >= minCount)
-    .map(([d]) => d)
-    .sort();
-
-  if (dates.length === 0) return [];
-
-  const ranges: { start: string; end: string; count: number }[] = [];
-  let rangeStart = dates[0];
-  let prev = dates[0];
-  let minInRange = heatmap[dates[0]];
-
-  for (let i = 1; i < dates.length; i++) {
-    const curr = dates[i];
-    const diff = differenceInDays(parseISO(curr), parseISO(prev));
-    if (diff === 1) {
-      minInRange = Math.min(minInRange, heatmap[curr]);
-      prev = curr;
-    } else {
-      ranges.push({ start: rangeStart, end: prev, count: minInRange });
-      rangeStart = curr;
-      prev = curr;
-      minInRange = heatmap[curr];
-    }
-  }
-  ranges.push({ start: rangeStart, end: prev, count: minInRange });
-
-  return ranges.sort((a, b) => b.count - a.count).slice(0, 3);
 }
 
 export default function DatesPage() {
@@ -280,8 +241,8 @@ export default function DatesPage() {
   const windowEnd = parseISO(trip.date_window_end);
   const heatmap = computeHeatmap(allVotes);
   const votedUserIds = new Set(allVotes.map((v) => v.user_id));
-  const threshold = Math.max(1, Math.ceil(members.length * 0.5));
-  const bestRanges = findBestRanges(heatmap, threshold);
+  // Windows everyone who voted can actually make, rather than half the members.
+  const consensus = bestConsensusRanges(allVotes);
   const isLocked = !!trip.confirmed_start;
 
   const QUICK_CHIPS = [
@@ -449,11 +410,12 @@ export default function DatesPage() {
       />
 
       {/* Organizer lock */}
-      {userRole === "organizer" && !isLocked && bestRanges.length > 0 && (
+      {userRole === "organizer" && !isLocked && consensus.ranges.length > 0 && (
         <DateLockButton
           slug={slug}
-          bestRanges={bestRanges}
-          totalMembers={members.length}
+          bestRanges={consensus.ranges}
+          voterCount={consensus.voterCount}
+          isUnanimous={consensus.isUnanimous}
           onLocked={(start, end) => {
             setTrip((prev) =>
               prev ? { ...prev, confirmed_start: start, confirmed_end: end, status: "voting" } : prev

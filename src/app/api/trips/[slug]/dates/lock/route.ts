@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidLockRange, type DateVote } from "@/lib/dateOverlap";
 import { z } from "zod";
 
 const LockSchema = z.object({
@@ -42,7 +43,7 @@ export async function POST(
 
   const { data: trip } = await admin
     .from("trips")
-    .select("id, status")
+    .select("id, status, date_window_start, date_window_end")
     .eq("slug", slug)
     .single();
 
@@ -58,6 +59,35 @@ export async function POST(
 
   if (!membership || membership.role !== "organizer") {
     return NextResponse.json({ error: "Organizer only" }, { status: 403 });
+  }
+
+  // The window has to sit inside the poll the group was actually asked about.
+  if (
+    (trip.date_window_start && parsed.data.confirmed_start < trip.date_window_start) ||
+    (trip.date_window_end && parsed.data.confirmed_end > trip.date_window_end)
+  ) {
+    return NextResponse.json(
+      { error: "Those dates fall outside the trip's voting window." },
+      { status: 422 }
+    );
+  }
+
+  // The organizer picks from windows the group agreed on. Until now this was
+  // only checked in the browser, so any range at all could be posted here and
+  // days half the group said they were busy would end up locked in.
+  const { data: votes } = await admin
+    .from("date_votes")
+    .select("user_id, date, is_available")
+    .eq("trip_id", trip.id);
+
+  if (!isValidLockRange((votes ?? []) as DateVote[], parsed.data.confirmed_start, parsed.data.confirmed_end)) {
+    return NextResponse.json(
+      {
+        error:
+          "Those dates include days the group did not agree on. Pick one of the suggested windows.",
+      },
+      { status: 422 }
+    );
   }
 
   await admin

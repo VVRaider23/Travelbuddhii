@@ -14,11 +14,20 @@ interface DateRange {
 interface Props {
   slug: string;
   bestRanges: DateRange[];
-  totalMembers: number;
+  /** How many people have voted at all. */
+  voterCount: number;
+  /** True when the offered windows work for every single voter. */
+  isUnanimous: boolean;
   onLocked: (start: string, end: string) => void;
 }
 
-export function DateLockButton({ slug, bestRanges, totalMembers, onLocked }: Props) {
+export function DateLockButton({
+  slug,
+  bestRanges,
+  voterCount,
+  isUnanimous,
+  onLocked,
+}: Props) {
   const [selected, setSelected] = useState<DateRange | null>(bestRanges[0] ?? null);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -44,7 +53,9 @@ export function DateLockButton({ slug, bestRanges, totalMembers, onLocked }: Pro
 
     setLoading(false);
     if (!res.ok) {
-      toast.error("Could not lock dates. Try again.");
+      // The server rejects windows the group did not agree on, and says why.
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Could not lock dates. Try again.");
       return;
     }
 
@@ -74,7 +85,9 @@ export function DateLockButton({ slug, bestRanges, totalMembers, onLocked }: Pro
           🔒 Lock dates (organizer)
         </p>
         <p className="text-[12px] mt-0.5" style={{ color: "var(--tb-muted)" }}>
-          Choose the best window. This advances the trip to destination voting.
+          {isUnanimous
+            ? `These windows work for all ${voterCount} ${voterCount === 1 ? "person" : "people"} who voted.`
+            : `No window works for all ${voterCount} voters. These are the best compromises.`}
         </p>
       </div>
 
@@ -107,7 +120,9 @@ export function DateLockButton({ slug, bestRanges, totalMembers, onLocked }: Pro
                   {formatRange(r)}
                 </p>
                 <p className="text-[11px]" style={{ color: "var(--tb-muted)" }}>
-                  {r.count}/{totalMembers} available
+                  {r.count === voterCount
+                    ? `everyone who voted is free (${voterCount})`
+                    : `${r.count} of ${voterCount} voters free`}
                 </p>
               </div>
             </button>
