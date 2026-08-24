@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
   ),
   manifest: "/manifest.json",
+};
+
+// themeColor belongs on the viewport export, not metadata. Sitting in metadata
+// it logged a warning on every page render in production.
+export const viewport: Viewport = {
   themeColor: "#25D366",
 };
 

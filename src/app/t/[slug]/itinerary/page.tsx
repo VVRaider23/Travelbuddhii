@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useTripStore } from "@/store/tripStore";
@@ -58,24 +59,32 @@ export default function ItineraryPage() {
 
   async function handleGenerate() {
     setGenerating(true);
-    const res = await fetch(`/api/trips/${slug}/itinerary/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customDays: trip?.confirmed_start ? undefined : customDays }),
-    });
+    try {
+      const res = await fetch(`/api/trips/${slug}/itinerary/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customDays: trip?.confirmed_start ? undefined : customDays }),
+      });
 
-    const data = await res.json();
-    setGenerating(false);
+      const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      toast.error(data.error ?? "Generation failed. Try again.");
-      return;
+      if (!res.ok) {
+        toast.error(data.error ?? "Generation failed. Try again.");
+        return;
+      }
+
+      setItems(data.items ?? []);
+      setDayThemes(data.dayThemes ?? []);
+      if (data.items?.length > 0) setSelectedDay(1);
+      toast.success("Itinerary generated!");
+    } catch {
+      // A dropped connection or a non-JSON gateway error used to reject here
+      // with nothing catching it, so setGenerating(false) never ran and the
+      // button sat on "Building your plan..." until the page was reloaded.
+      toast.error("Lost connection while building the plan. Try again.");
+    } finally {
+      setGenerating(false);
     }
-
-    setItems(data.items ?? []);
-    setDayThemes(data.dayThemes ?? []);
-    if (data.items?.length > 0) setSelectedDay(1);
-    toast.success("Itinerary generated!");
   }
 
   const days = [...new Set(items.map((i) => i.day_number))].sort((a, b) => a - b);
@@ -121,9 +130,21 @@ export default function ItineraryPage() {
             <p className="text-sm mt-1" style={{ color: "var(--tb-muted)" }}>
               {trip?.destination
                 ? `AI will create a day-by-day plan for ${trip.destination}`
-                : "Set a destination first to generate an itinerary"}
+                : "The group has not picked a destination yet."}
             </p>
           </div>
+
+          {/* Without a destination this screen used to be a dead end: it said
+              what was missing and gave no way to go fix it. */}
+          {!trip?.destination && (
+            <Link
+              href={`/t/${slug}/destinations`}
+              className="w-full max-w-xs py-4 rounded-2xl text-white font-semibold text-base text-center"
+              style={{ background: "linear-gradient(135deg, var(--tb-orange), var(--tb-orange-dark))" }}
+            >
+              Go pick a destination
+            </Link>
+          )}
 
           {trip?.destination && (
             <div className="w-full max-w-xs flex flex-col gap-3">

@@ -123,24 +123,11 @@ JSON structure:
 
   if (!parsed) return NextResponse.json({ error: "Invalid AI response" }, { status: 500 });
 
-  // Save snapshot of existing itinerary before replacing
-  const { data: existing } = await admin
-    .from("itinerary_items")
-    .select("*")
-    .eq("trip_id", trip.id);
-
-  if (existing && existing.length > 0) {
-    await admin.from("itinerary_snapshots").insert({
-      trip_id: trip.id,
-      snapshot: existing,
-      created_by: user.id,
-    });
-  }
-
-  // Delete existing itinerary
-  await admin.from("itinerary_items").delete().eq("trip_id", trip.id);
-
-  // Validate places and insert items
+  // Build the replacement completely before touching what is already there.
+  //
+  // This used to delete the existing itinerary first and then call out to the
+  // Places API, so any failure in between left the trip with no plan at all and
+  // nothing on screen to explain where it went.
   const allPlaces = parsed.days.flatMap((d: { items: { place_name: string }[] }) =>
     d.items.map((item) => ({ name: item.place_name }))
   );
@@ -168,10 +155,46 @@ JSON structure:
     }
   }
 
-  const { data: inserted } = await admin
+  if (itemsToInsert.length === 0) {
+    return NextResponse.json(
+      { error: "The plan came back empty. Try again." },
+      { status: 502 }
+    );
+  }
+
+  // Snapshot what is being replaced, so a regenerate the group dislikes is
+  // recoverable.
+  const { data: existing } = await admin
+    .from("itinerary_items")
+    .select("*")
+    .eq("trip_id", trip.id);
+
+  if (existing && existing.length > 0) {
+    await admin.from("itinerary_snapshots").insert({
+      trip_id: trip.id,
+      snapshot: existing,
+      created_by: user.id,
+    });
+  }
+
+  await admin.from("itinerary_items").delete().eq("trip_id", trip.id);
+
+  const { data: inserted, error: insertError } = await admin
     .from("itinerary_items")
     .insert(itemsToInsert)
     .select("*");
+
+  // The old rows are already gone at this point. Put them back rather than
+  // leaving the trip empty.
+  if (insertError) {
+    if (existing && existing.length > 0) {
+      await admin.from("itinerary_items").insert(existing);
+    }
+    return NextResponse.json(
+      { error: "Could not save the new plan. Your previous itinerary is intact." },
+      { status: 500 }
+    );
+  }
 
   // Log event
   await admin.from("event_logs").insert({
