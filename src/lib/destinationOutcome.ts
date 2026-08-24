@@ -20,14 +20,19 @@ export interface DestinationVote {
 export interface DestinationLike {
   id: string;
   name: string;
+  estimated_cost_min?: number | null;
+  estimated_cost_max?: number | null;
 }
+
+/** Why a place won: the vote outright, or the budget settling a dead heat. */
+export type WinReason = "votes" | "budget";
 
 export type DestinationOutcome<T extends DestinationLike> =
   /** Not everyone has voted yet. Nothing is decided. */
   | { kind: "waiting"; remaining: number; voted: number; memberCount: number }
-  /** One place has strictly more votes than every other. */
-  | { kind: "winner"; destination: T; votes: number }
-  /** Two or more places share the lead. The organizer picks between them. */
+  /** One place leads on votes, or led jointly and the budget settled it. */
+  | { kind: "winner"; destination: T; votes: number; reason: WinReason }
+  /** Still a dead heat after the budget. The organizer picks between them. */
   | { kind: "tie"; tied: T[]; votes: number };
 
 /** destination id → how many people picked it. Every destination gets a key. */
@@ -68,10 +73,45 @@ export function everyoneVoted(votes: DestinationVote[], memberCount: number): bo
  * running leader would let the destination flip under people mid-vote, and an
  * itinerary generated in that window would be for the wrong place.
  */
+/**
+ * Settle a dead heat using what the group can afford.
+ *
+ * People pick up to two places each, so in a small group where nobody overlaps
+ * every place sits on one vote and the "tie" is really "no agreement at all".
+ * On real data that was 14 trips out of 19. Rather than push every one of those
+ * onto the organizer, the group's budget breaks the tie first: of the places
+ * still standing, take the ones the group can actually afford and pick the
+ * cheapest, so the choice is the one that strands nobody.
+ *
+ * Returns null when the budget cannot decide, which keeps the organizer as the
+ * fallback rather than inventing a winner:
+ *   - no budget set, or no cost estimate on the tied places
+ *   - nothing tied is within the budget
+ *   - two affordable places cost exactly the same
+ */
+function settleByBudget<T extends DestinationLike>(
+  tied: T[],
+  groupCeiling: number | null | undefined
+): T | null {
+  if (groupCeiling === null || groupCeiling === undefined) return null;
+
+  const affordable = tied.filter(
+    (d) => d.estimated_cost_min != null && d.estimated_cost_min <= groupCeiling
+  );
+  if (affordable.length === 0) return null;
+
+  const cheapest = Math.min(...affordable.map((d) => d.estimated_cost_min!));
+  const winners = affordable.filter((d) => d.estimated_cost_min === cheapest);
+
+  return winners.length === 1 ? winners[0] : null;
+}
+
 export function outcome<T extends DestinationLike>(
   votes: DestinationVote[],
   destinations: T[],
-  memberCount: number
+  memberCount: number,
+  /** The group's lowest budget ceiling, used only to settle a dead heat. */
+  groupCeiling?: number | null
 ): DestinationOutcome<T> {
   const voted = distinctVoters(votes);
 
@@ -94,7 +134,15 @@ export function outcome<T extends DestinationLike>(
 
   const leaders = destinations.filter((d) => counts[d.id] === topCount);
 
-  return leaders.length === 1
-    ? { kind: "winner", destination: leaders[0], votes: topCount }
-    : { kind: "tie", tied: leaders, votes: topCount };
+  if (leaders.length === 1) {
+    return { kind: "winner", destination: leaders[0], votes: topCount, reason: "votes" };
+  }
+
+  // Votes came out level. Let the budget decide before troubling the organizer.
+  const settled = settleByBudget(leaders, groupCeiling);
+  if (settled) {
+    return { kind: "winner", destination: settled, votes: topCount, reason: "budget" };
+  }
+
+  return { kind: "tie", tied: leaders, votes: topCount };
 }

@@ -134,7 +134,11 @@ export default function DestinationsPage() {
     // destination quietly change under the person who just voted.
     const body = await res.json().catch(() => null);
     if (body?.outcome?.kind === "winner") {
-      toast.success(`${body.outcome.destination.name} wins! Moving to itinerary planning.`);
+      toast.success(
+        body.outcome.reason === "budget"
+          ? `Tied on votes, so ${body.outcome.destination.name} wins on budget. Moving to itinerary planning.`
+          : `${body.outcome.destination.name} wins! Moving to itinerary planning.`
+      );
     } else if (body?.outcome?.kind === "tie") {
       toast("It's a tie. The organizer picks between the top places.");
     }
@@ -414,7 +418,8 @@ export default function DestinationsPage() {
                 </div>
                 <p style={{ fontSize: 12, color: "#6B6560", marginBottom: 14, lineHeight: 1.5 }}>
                   {result.tied.map((d) => d.name).join(" and ")} each got {result.votes}{" "}
-                  {result.votes === 1 ? "vote" : "votes"}.{" "}
+                  {result.votes === 1 ? "vote" : "votes"}, and the group&apos;s budget
+                  does not separate them either.{" "}
                   {userRole === "organizer"
                     ? "You pick which one."
                     : "The organizer picks which one."}

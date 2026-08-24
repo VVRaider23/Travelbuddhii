@@ -40,6 +40,83 @@ describe("the trip that had a clear winner", () => {
   });
 });
 
+describe("the budget settles a dead heat before the organizer is asked", () => {
+  // Real cost estimates from production: Goa 25k-35k, Manali 30k-40k,
+  // Pondicherry 20k-30k.
+  const GOA = { id: "goa", name: "Goa", estimated_cost_min: 25000, estimated_cost_max: 35000 };
+  const MANALI = { id: "manali", name: "Manali", estimated_cost_min: 30000, estimated_cost_max: 40000 };
+  const PONDI = { id: "pondi", name: "Pondicherry", estimated_cost_min: 20000, estimated_cost_max: 30000 };
+  const OPTIONS = [GOA, MANALI, PONDI];
+
+  // Two people, no overlap at all, so everything sits on one vote.
+  const deadHeat = [...pick("a", GOA.id), ...pick("b", MANALI.id)];
+
+  it("picks the cheaper of the tied places", () => {
+    const result = outcome(deadHeat, OPTIONS, 2, 40000);
+
+    expect(result.kind).toBe("winner");
+    expect(result.kind === "winner" && result.destination).toEqual(GOA);
+  });
+
+  it("says the budget decided it, not the vote", () => {
+    const result = outcome(deadHeat, OPTIONS, 2, 40000);
+
+    expect(result.kind === "winner" && result.reason).toBe("budget");
+  });
+
+  it("marks an outright vote win as decided by votes", () => {
+    const clear = [...pick("a", GOA.id), ...pick("b", GOA.id)];
+
+    expect(outcome(clear, OPTIONS, 2, 40000).kind === "winner").toBe(true);
+    const result = outcome(clear, OPTIONS, 2, 40000);
+    expect(result.kind === "winner" && result.reason).toBe("votes");
+  });
+
+  it("ignores tied places the group cannot afford", () => {
+    // Only Pondicherry starts at or below 22,000.
+    const tied = [...pick("a", PONDI.id), ...pick("b", MANALI.id)];
+    const result = outcome(tied, OPTIONS, 2, 22000);
+
+    expect(result.kind === "winner" && result.destination).toEqual(PONDI);
+  });
+
+  it("leaves it to the organizer when nothing tied is affordable", () => {
+    const tied = [...pick("a", GOA.id), ...pick("b", MANALI.id)];
+
+    expect(outcome(tied, OPTIONS, 2, 10000).kind).toBe("tie");
+  });
+
+  it("leaves it to the organizer when no budget is set", () => {
+    expect(outcome(deadHeat, OPTIONS, 2, null).kind).toBe("tie");
+    expect(outcome(deadHeat, OPTIONS, 2).kind).toBe("tie");
+  });
+
+  it("leaves it to the organizer when two affordable places cost the same", () => {
+    const TWIN_A = { id: "ta", name: "Twin A", estimated_cost_min: 20000, estimated_cost_max: 30000 };
+    const TWIN_B = { id: "tb", name: "Twin B", estimated_cost_min: 20000, estimated_cost_max: 30000 };
+    const tied = [...pick("a", TWIN_A.id), ...pick("b", TWIN_B.id)];
+
+    expect(outcome(tied, [TWIN_A, TWIN_B], 2, 40000).kind).toBe("tie");
+  });
+
+  it("leaves it to the organizer when the tied places have no cost estimate", () => {
+    const NO_COST_A = { id: "na", name: "No cost A" };
+    const NO_COST_B = { id: "nb", name: "No cost B" };
+    const tied = [...pick("a", NO_COST_A.id), ...pick("b", NO_COST_B.id)];
+
+    expect(outcome(tied, [NO_COST_A, NO_COST_B], 2, 40000).kind).toBe("tie");
+  });
+
+  it("still uses the one place that has a cost estimate", () => {
+    const PRICED = { id: "p", name: "Priced", estimated_cost_min: 18000, estimated_cost_max: 25000 };
+    const UNPRICED = { id: "u", name: "Unpriced" };
+    const tied = [...pick("a", PRICED.id), ...pick("b", UNPRICED.id)];
+    const result = outcome(tied, [PRICED, UNPRICED], 2, 40000);
+
+    expect(result.kind === "winner" && result.destination).toEqual(PRICED);
+  });
+});
+
 describe("a tie goes to the organizer", () => {
   const votes = [
     ...pick("voter-a", LADAKH.id),

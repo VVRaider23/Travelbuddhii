@@ -46,7 +46,7 @@ export async function GET(
 
   const { data: trip } = await admin
     .from("trips")
-    .select("id, status, destination")
+    .select("id, status, destination, budget_max")
     .eq("slug", slug)
     .single();
   if (!trip) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -84,7 +84,8 @@ export async function GET(
     outcome: outcome(
       voteList as DestinationVote[],
       destList as DestinationLike[],
-      (members ?? []).length
+      (members ?? []).length,
+      trip.budget_max
     ),
   });
 }
@@ -105,7 +106,7 @@ export async function POST(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = createAdminClient() as any;
-  const { data: trip } = await admin.from("trips").select("id").eq("slug", slug).single();
+  const { data: trip } = await admin.from("trips").select("id, budget_max").eq("slug", slug).single();
   if (!trip) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Verify membership
@@ -145,14 +146,15 @@ export async function POST(
   const [{ data: allVotes }, { data: destinations }, { count: memberCount }] =
     await Promise.all([
       admin.from("destination_votes").select("user_id, destination_id").eq("trip_id", trip.id),
-      admin.from("destinations").select("id, name").eq("trip_id", trip.id),
+      admin.from("destinations").select("id, name, estimated_cost_min, estimated_cost_max").eq("trip_id", trip.id),
       admin.from("trip_members").select("*", { count: "exact", head: true }).eq("trip_id", trip.id),
     ]);
 
   const result = outcome(
     (allVotes ?? []) as DestinationVote[],
     (destinations ?? []) as DestinationLike[],
-    memberCount ?? 0
+    memberCount ?? 0,
+    trip.budget_max
   );
 
   if (result.kind === "winner") {
@@ -181,7 +183,7 @@ export async function PATCH(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const admin = createAdminClient() as any;
-  const { data: trip } = await admin.from("trips").select("id").eq("slug", slug).single();
+  const { data: trip } = await admin.from("trips").select("id, budget_max").eq("slug", slug).single();
   if (!trip) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { data: membership } = await admin
@@ -208,14 +210,15 @@ export async function PATCH(
   const [{ data: allVotes }, { data: destinations }, { count: memberCount }] =
     await Promise.all([
       admin.from("destination_votes").select("user_id, destination_id").eq("trip_id", trip.id),
-      admin.from("destinations").select("id, name").eq("trip_id", trip.id),
+      admin.from("destinations").select("id, name, estimated_cost_min, estimated_cost_max").eq("trip_id", trip.id),
       admin.from("trip_members").select("*", { count: "exact", head: true }).eq("trip_id", trip.id),
     ]);
 
   const result = outcome(
     (allVotes ?? []) as DestinationVote[],
     (destinations ?? []) as DestinationLike[],
-    memberCount ?? 0
+    memberCount ?? 0,
+    trip.budget_max
   );
 
   if (result.kind === "tie" && !result.tied.some((d) => d.id === dest.id)) {
