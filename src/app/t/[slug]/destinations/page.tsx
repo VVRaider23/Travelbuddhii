@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { useTripStore } from "@/store/tripStore";
+import type { DestinationOutcome } from "@/lib/destinationOutcome";
 import { CompactDestCard, getDestTheme } from "@/components/destinations/CompactDestCard";
 import { AIGenerateState } from "@/components/destinations/AIGenerateState";
 import { StepFooter } from "@/components/layout/StepFooter";
@@ -48,6 +49,8 @@ interface VoteData {
   myPicks: string[];
   voters: string[];
   members: { user_id: string; role: string }[];
+  /** Decided server-side by the same code the vote route acts on. */
+  outcome: DestinationOutcome<{ id: string; name: string }>;
 }
 
 /* ── Page ── */
@@ -126,6 +129,16 @@ export default function DestinationsPage() {
       toast.error("Could not save vote. Try again.");
       return;
     }
+
+    // The last vote in decides the trip, so say so rather than letting the
+    // destination quietly change under the person who just voted.
+    const body = await res.json().catch(() => null);
+    if (body?.outcome?.kind === "winner") {
+      toast.success(`${body.outcome.destination.name} wins! Moving to itinerary planning.`);
+    } else if (body?.outcome?.kind === "tie") {
+      toast("It's a tie. The organizer picks between the top places.");
+    }
+
     await loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
@@ -178,7 +191,8 @@ export default function DestinationsPage() {
     setLocking(false);
 
     if (!res.ok) {
-      toast.error("Could not lock destination.");
+      // The server refuses a pick outside the tied set, and names the tie.
+      toast.error(body.error ?? "Could not lock destination.");
       return;
     }
 
@@ -204,7 +218,16 @@ export default function DestinationsPage() {
   });
 
   const topDest = sortedByVotes[0];
-  const canLock = !isLocked && userRole === "organizer" && data && voterCount >= Math.ceil(memberCount * 0.5);
+  const result = data?.outcome;
+  const isTied = !isLocked && result?.kind === "tie";
+  // A clear winner locks itself the moment the last person votes, so the manual
+  // lock is only an escape hatch for when some members never get round to it.
+  const canLockEarly =
+    !isLocked &&
+    !isTied &&
+    userRole === "organizer" &&
+    result?.kind === "waiting" &&
+    voterCount > 0;
 
   return (
     <div style={{ minHeight: "calc(100vh - 132px)", background: "#F5F1EB", fontFamily: "inherit" }}>
@@ -358,8 +381,100 @@ export default function DestinationsPage() {
               </div>
             )}
 
-            {/* ── Organizer lock section ── */}
-            {canLock && topDest && (
+            {/* ── Waiting on the rest of the group ── */}
+            {!isLocked && result?.kind === "waiting" && result.remaining > 0 && hasVoted && (
+              <div style={{
+                margin: "0 16px", padding: "14px 16px", borderRadius: 16,
+                background: "#fff", border: "1px solid rgba(0,0,0,0.05)",
+                animation: "fadeUp 0.4s ease-out 0.2s both",
+              }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#2D2A26", margin: 0 }}>
+                  Waiting on {result.remaining} more{" "}
+                  {result.remaining === 1 ? "person" : "people"}
+                </p>
+                <p style={{ fontSize: 12, color: "#6B6560", marginTop: 4, lineHeight: 1.5 }}>
+                  The most-voted place is picked automatically once everyone has voted.
+                </p>
+              </div>
+            )}
+
+            {/* ── Tie: only the organizer settles it, and only between the tied places ── */}
+            {isTied && result.kind === "tie" && (
+              <div style={{
+                margin: "0 16px", padding: "18px 16px", borderRadius: 20,
+                background: "linear-gradient(145deg, #FFF0E8, #FFF5EE)",
+                border: "1.5px solid rgba(255,107,53,0.15)",
+                animation: "fadeUp 0.4s ease-out 0.2s both",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 15 }}>{"⚖️"}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#E55A25" }}>
+                    It&apos;s a tie
+                  </span>
+                </div>
+                <p style={{ fontSize: 12, color: "#6B6560", marginBottom: 14, lineHeight: 1.5 }}>
+                  {result.tied.map((d) => d.name).join(" and ")} each got {result.votes}{" "}
+                  {result.votes === 1 ? "vote" : "votes"}.{" "}
+                  {userRole === "organizer"
+                    ? "You pick which one."
+                    : "The organizer picks which one."}
+                </p>
+
+                {userRole === "organizer" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {result.tied.map((tied, i) => {
+                      const theme = getDestTheme(i);
+                      const confirming = lockConfirm === tied.id;
+                      return (
+                        <div key={tied.id} style={{
+                          padding: "12px 14px", borderRadius: 14,
+                          background: "#fff", border: `1.5px solid ${theme.accent}20`,
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <span style={{ fontSize: 22 }}>{theme.emoji}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: "#2D2A26" }}>
+                              {tied.name}
+                            </span>
+                            {!confirming && (
+                              <button onClick={() => setLockConfirm(tied.id)} style={{
+                                padding: "7px 14px", borderRadius: 10, border: "none",
+                                background: "linear-gradient(135deg, #FF6B35, #FF8F5E)",
+                                color: "#fff", fontSize: 12, fontWeight: 700,
+                                cursor: "pointer", fontFamily: "inherit",
+                              }}>
+                                Choose
+                              </button>
+                            )}
+                          </div>
+                          {confirming && (
+                            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                              <button onClick={() => setLockConfirm(null)} style={{
+                                flex: 1, padding: 10, borderRadius: 10,
+                                border: "1px solid rgba(0,0,0,0.08)", background: "#fff",
+                                fontSize: 12, fontWeight: 600, color: "#6B6560",
+                                cursor: "pointer", fontFamily: "inherit",
+                              }}>Cancel</button>
+                              <button onClick={() => handleLock(tied.id)} disabled={locking} style={{
+                                flex: 1, padding: 10, borderRadius: 10, border: "none",
+                                background: "linear-gradient(135deg, #FF6B35, #FF8F5E)",
+                                fontSize: 12, fontWeight: 700, color: "#fff",
+                                cursor: "pointer", fontFamily: "inherit",
+                                opacity: locking ? 0.7 : 1,
+                              }}>
+                                {locking ? "Locking..." : `Yes, ${tied.name}`}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Organizer escape hatch when some members never vote ── */}
+            {canLockEarly && topDest && (
               <div style={{
                 margin: "0 16px", padding: "18px 16px", borderRadius: 20,
                 background: "linear-gradient(145deg, #FFF0E8, #FFF5EE)",
@@ -370,8 +485,10 @@ export default function DestinationsPage() {
                   <span style={{ fontSize: 15 }}>{"\uD83C\uDFC6"}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#E55A25" }}>Lock destination (organizer)</span>
                 </div>
-                <p style={{ fontSize: 12, color: "#6B6560", marginBottom: 14 }}>
-                  Enough votes are in. Lock the group&apos;s top pick to move to itinerary planning.
+                <p style={{ fontSize: 12, color: "#6B6560", marginBottom: 14, lineHeight: 1.5 }}>
+                  {result?.kind === "waiting" && result.remaining > 0
+                    ? `${result.remaining} ${result.remaining === 1 ? "person has" : "people have"} not voted. You can lock the current leader now rather than keep waiting.`
+                    : "Lock the group's top pick to move to itinerary planning."}
                 </p>
 
                 {/* Top destination preview */}
