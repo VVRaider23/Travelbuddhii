@@ -2,6 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  groupCeiling,
+  groupFloor,
+  rangesOverlap,
+  ceilingExplanation,
+  type BudgetVote,
+} from "@/lib/groupBudget";
 import { z } from "zod";
 
 const BudgetSchema = z.object({
@@ -51,18 +58,12 @@ export async function GET(
     admin.from("trip_members").select("user_id").eq("trip_id", trip.id),
   ]);
 
-  // Compute overlap range (intersection of all submitted ranges)
-  const votes = budgetVotes ?? [];
-  let overlapMin = 0;
-  let overlapMax = Infinity;
-  for (const v of votes) {
-    overlapMin = Math.max(overlapMin, v.budget_min);
-    overlapMax = Math.min(overlapMax, v.budget_max);
-  }
-
-  const overlap = votes.length >= 2 && overlapMin <= overlapMax
-    ? { min: overlapMin, max: overlapMax }
-    : null;
+  // The trip is planned against the tightest ceiling in the group, whether one
+  // person has voted or ten, and whether or not their ranges overlap.
+  // Rows here carry user_id too, because the caller's own vote is picked out below.
+  const votes = (budgetVotes ?? []) as (BudgetVote & { user_id: string })[];
+  const ceiling = groupCeiling(votes);
+  const floor = groupFloor(votes);
 
   // Tally vibes
   const vibeCount: Record<string, number> = {};
@@ -82,7 +83,10 @@ export async function GET(
     myBudget,
     myVibes,
     myInterestTags,
-    overlap,
+    ceiling,
+    floor,
+    overlaps: rangesOverlap(votes),
+    explanation: ceilingExplanation(votes),
     vibeCount,
     respondedCount: votes.length,
     totalMembers: (members ?? []).length,
@@ -166,24 +170,25 @@ export async function POST(
     });
   }
 
-  // Update trip's group-level budget/vibes aggregates
-  // Recompute overlap for trip update
+  // Update the trip's group-level budget.
+  //
+  // This used to require two votes and a non-empty intersection before writing
+  // anything, so a trip with one budget submitted, or with ranges that missed
+  // each other, kept a null budget and the itinerary prompt invented a number.
+  // The tightest ceiling in the group is always a real answer.
   const { data: allBudgets } = await admin
     .from("budget_votes")
     .select("budget_min, budget_max")
     .eq("trip_id", trip.id);
 
-  let overlapMin = 0;
-  let overlapMax = Infinity;
-  for (const v of allBudgets ?? []) {
-    overlapMin = Math.max(overlapMin, v.budget_min);
-    overlapMax = Math.min(overlapMax, v.budget_max);
-  }
+  const votes = (allBudgets ?? []) as BudgetVote[];
+  const ceiling = groupCeiling(votes);
+  const floor = groupFloor(votes);
 
-  if ((allBudgets ?? []).length >= 2 && overlapMin <= overlapMax) {
+  if (ceiling !== null && floor !== null) {
     await admin.from("trips").update({
-      budget_min: overlapMin,
-      budget_max: overlapMax,
+      budget_min: floor,
+      budget_max: ceiling,
     }).eq("id", trip.id);
   }
 

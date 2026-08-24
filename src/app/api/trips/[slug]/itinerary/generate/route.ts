@@ -72,6 +72,15 @@ export async function POST(
     }
   }
 
+  // The group's budget is whatever the budget step settled on: the tightest
+  // ceiling anyone submitted. When nobody has set one, say so rather than
+  // substituting a number the group never agreed to, which is what the old
+  // `?? 40000` did on every trip with a null budget.
+  const budgetLine =
+    trip.budget_max !== null
+      ? `Hard cap Rs${trip.budget_max.toLocaleString("en-IN")} per person. This is the lowest budget in the group, so nothing may exceed it.`
+      : "The group has not set a budget. Keep costs modest and state the approximate cost of each item.";
+
   const openai = getOpenAI();
 
   let parsed;
@@ -90,14 +99,14 @@ Rules:
 - Cluster geographically: all Day N activities within 30-min drive
 - Include veg AND non-veg meal options each day
 - Group size ${memberCount ?? 5}: group-compatible activities only
-- Budget: fit within ₹${trip.budget_max ?? 40000}/person
+- Budget: ${budgetLine}
 
 JSON structure:
 {"days":[{"day_number":1,"theme":"...","area":"...","items":[{"place_name":"...","category":"activity|meal|transport|accommodation","start_time":"HH:MM or null","duration_minutes":60,"notes":"...","booking_platform":"makemytrip|irctc|redbus|zomato|direct|none|null","search_query":"... or null","is_offbeat":true,"how_to_get_there":"... or null"}]}]}`,
         },
         {
           role: "user",
-          content: `Generate a ${days}-day itinerary for ${trip.destination}. Budget ₹${trip.budget_min ?? 20000}–${trip.budget_max ?? 40000}/person. Vibes: ${(trip.vibes ?? []).join(", ") || "adventure, nature"}. Dates: ${startDate ?? "flexible"}–${endDate ?? "flexible"}. Include 1 accommodation, 3-4 activities, 2-3 meals, and transport items per day. Return all ${days} days.`,
+          content: `Generate a ${days}-day itinerary for ${trip.destination}. ${budgetLine} Vibes: ${(trip.vibes ?? []).join(", ") || "adventure, nature"}. Dates: ${startDate ?? "flexible"} to ${endDate ?? "flexible"}. Include 1 accommodation, 3-4 activities, 2-3 meals, and transport items per day. Return all ${days} days.`,
         },
       ],
       max_tokens: 4000,

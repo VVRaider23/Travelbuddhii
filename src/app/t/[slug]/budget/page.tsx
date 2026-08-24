@@ -82,7 +82,13 @@ interface BudgetData {
   myBudget: { budget_min: number; budget_max: number } | null;
   myVibes: string[];
   myInterestTags: string[];
-  overlap: { min: number; max: number } | null;
+  /** The figure the trip is planned against: the lowest ceiling in the group. */
+  ceiling: number | null;
+  floor: number | null;
+  /** False when at least two people's ranges miss each other entirely. */
+  overlaps: boolean;
+  /** Ready-made sentence naming the ceiling and why it is the ceiling. */
+  explanation: string;
   vibeCount: Record<string, number>;
   respondedCount: number;
   totalMembers: number;
@@ -662,6 +668,38 @@ export default function BudgetPage() {
             </div>
           );
         })()}
+
+        {/* ── What the trip is planned against ── */}
+        {data && data.ceiling !== null && (
+          <div style={{
+            margin: "0 20px", padding: "16px",
+            borderRadius: 16,
+            background: data.overlaps
+              ? "linear-gradient(145deg, #fff, #FEFCF9)"
+              : "rgba(255,107,53,0.04)",
+            border: data.overlaps
+              ? "1px solid rgba(0,0,0,0.04)"
+              : "1.5px solid rgba(255,107,53,0.18)",
+            animation: "fadeUp 0.4s ease-out 0.35s both",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--tb-text)", marginBottom: 8 }}>
+              Final budget
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--tb-orange)", lineHeight: 1.1 }}>
+              ₹{data.ceiling.toLocaleString("en-IN")}
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--tb-muted)" }}> / person</span>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--tb-muted)", marginTop: 8, lineHeight: 1.5 }}>
+              {data.explanation}
+            </p>
+            {!data.overlaps && (
+              <p style={{ fontSize: 12, color: "var(--tb-orange)", marginTop: 6, fontWeight: 600 }}>
+                Someone in the group budgeted well below the others. The plan is built
+                to this number so nobody is priced out.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Sticky save ── */}
