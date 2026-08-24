@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useTripStore } from "@/store/tripStore";
 import { ItineraryItem, type ItineraryItemData } from "@/components/itinerary/ItineraryItem";
 import { ChatEditor } from "@/components/itinerary/ChatEditor";
+import { StepFooter } from "@/components/layout/StepFooter";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 
 interface DayTheme {
@@ -229,6 +230,8 @@ export default function ItineraryPage() {
           </div>
         </>
       )}
+
+      <StepFooter slug={slug} current="itinerary" />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useTripStore } from "@/store/tripStore";
 import { CompactDestCard, getDestTheme } from "@/components/destinations/CompactDestCard";
 import { AIGenerateState } from "@/components/destinations/AIGenerateState";
+import { StepFooter } from "@/components/layout/StepFooter";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 
 /* ── Types ── */
@@ -441,6 +442,13 @@ export default function DestinationsPage() {
           </>
         )}
       </div>
+
+      {/* Votes autosave on a debounce, so there is never unsaved work to warn about */}
+      <StepFooter
+        slug={slug}
+        current="destinations"
+        workState={saving ? "saving" : "saved"}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateSlug } from "@/lib/slug";
+import { nameFromUser, avatarFromUser } from "@/lib/memberProfile";
 import { z } from "zod";
 
 const CreateTripSchema = z.object({
@@ -88,6 +89,9 @@ export async function POST(request: NextRequest) {
     trip_id: trip.id,
     user_id: user.id,
     role: "organizer",
+    // Seed the name from the identity provider so nobody shows up as an id.
+    display_name: nameFromUser(user),
+    avatar_url: avatarFromUser(user),
   });
 
   // Initialize date_poll_config

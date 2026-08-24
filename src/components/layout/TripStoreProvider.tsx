@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useTripStore, type TripMember } from "@/store/tripStore";
 import type { TripStatus, MemberRole } from "@/types/database";
+import type { StepState } from "@/lib/tripProgress";
 
 interface Props {
   tripId: string;
@@ -18,7 +19,8 @@ interface Props {
   budgetMin: number | null;
   budgetMax: number | null;
   tripVibes: string[];
-  members: { user_id: string; role: MemberRole; joined_at: string }[];
+  members: TripMember[];
+  stepStates: Record<string, StepState>;
   children: React.ReactNode;
 }
 
@@ -37,6 +39,7 @@ export function TripStoreProvider({
   budgetMax,
   tripVibes,
   members,
+  stepStates,
   children,
 }: Props) {
   const setTripData = useTripStore((s) => s.setTripData);
@@ -56,13 +59,10 @@ export function TripStoreProvider({
       budgetMin,
       budgetMax,
       tripVibes,
-      members: members.map((m) => ({
-        user_id: m.user_id,
-        role: m.role,
-        joined_at: m.joined_at,
-      })) as TripMember[],
+      members,
+      stepStates,
     });
-  }, [tripId, tripSlug, tripName, tripStatus, userRole, currentUserId, dateWindowStart, dateWindowEnd, confirmedStart, confirmedEnd, budgetMin, budgetMax, tripVibes, members, setTripData]);
+  }, [tripId, tripSlug, tripName, tripStatus, userRole, currentUserId, dateWindowStart, dateWindowEnd, confirmedStart, confirmedEnd, budgetMin, budgetMax, tripVibes, members, stepStates, setTripData]);
 
   return <>{children}</>;
 }

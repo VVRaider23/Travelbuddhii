@@ -3,14 +3,15 @@
 import { create } from "zustand";
 import type { TripStatus, MemberRole } from "@/types/database";
 import type { Settlement } from "@/lib/settlement";
+import type { StepState } from "@/lib/tripProgress";
 
 export interface TripMember {
   user_id: string;
   role: MemberRole;
   joined_at: string;
-  display_name?: string;
-  avatar_url?: string;
-  upi_id?: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  upi_id?: string | null;
 }
 
 export interface ItineraryItem {
@@ -87,6 +88,9 @@ interface TripStore {
   // Members
   members: TripMember[];
 
+  // Step progress, computed server-side in the trip layout from real trip data
+  stepStates: Record<string, StepState>;
+
   // Date polling
   dateVotes: Record<string, Record<string, boolean>>;   // userId → date → isAvailable
   heatmap: Record<string, number>;                       // date → count of available
@@ -138,6 +142,7 @@ export const useTripStore = create<TripStore>((set) => ({
   confirmedStart: null,
   confirmedEnd: null,
   members: [],
+  stepStates: {},
   dateVotes: {},
   heatmap: {},
   isAnonymous: false,

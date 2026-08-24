@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { nameFromUser, avatarFromUser } from "@/lib/memberProfile";
 import { z } from "zod";
 
 const JoinSchema = z.object({ slug: z.string().min(1) });
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
       trip_id: trip.id,
       user_id: user.id,
       role: "member",
+      // Seed the name from the identity provider so nobody shows up as an id.
+      display_name: nameFromUser(user),
+      avatar_url: avatarFromUser(user),
     });
 
     // Log event

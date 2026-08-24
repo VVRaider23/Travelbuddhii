@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TripDashboard } from "@/components/trip/TripDashboard";
-import { JoinPage } from "@/components/trip/JoinPage";
 import { redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ join?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -55,9 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function TripPage({ params, searchParams }: Props) {
+export default async function TripPage({ params }: Props) {
   const { slug } = await params;
-  const { join } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -74,27 +71,13 @@ export default async function TripPage({ params, searchParams }: Props) {
 
   const { data: members } = await admin
     .from("trip_members")
-    .select("user_id, role, joined_at")
+    .select("user_id, role, joined_at, display_name, avatar_url")
     .eq("trip_id", trip.id);
 
   const memberList = members ?? [];
-  const isMember = user
-    ? memberList.some((m: { user_id: string }) => m.user_id === user.id)
-    : false;
 
-  // Non-member view — show join page (also shown when ?join=1 after auth)
-  if (!isMember) {
-    return (
-      <JoinPage
-        slug={slug}
-        tripName={trip.name}
-        memberCount={memberList.length}
-        destination={trip.destination}
-      />
-    );
-  }
-
-  // Member dashboard
+  // Non-members never get this far: the layout above renders the join screen
+  // before this page runs. Membership is enforced in exactly one place.
   return (
     <TripDashboard
       slug={slug}

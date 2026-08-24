@@ -4,12 +4,13 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { buildUpiRedirectUrl } from "@/lib/upi";
+import { memberDisplayName } from "@/lib/memberProfile";
 import type { Settlement } from "@/lib/settlement";
 
 interface Member {
   user_id: string;
-  display_name?: string;
-  upi_id?: string;
+  display_name?: string | null;
+  upi_id?: string | null;
 }
 
 interface Props {
@@ -29,16 +30,25 @@ export function SettlementList({ settlements, members, currentUserId, slug, onSe
   }
 
   function getName(userId: string): string {
-    const m = getMember(userId);
-    return m.display_name ?? `User ${userId.slice(0, 6)}`;
+    return memberDisplayName(getMember(userId));
   }
 
   async function handlePay(settlement: Settlement) {
     const toMember = getMember(settlement.to);
+
+    // Previously this fabricated "firstname@upi" when no ID was set, which sends
+    // money into the void. Better to stop and tell them whose ID is missing.
+    if (!toMember.upi_id) {
+      toast.error(
+        `${getName(settlement.to)} hasn't added a UPI ID yet. Ask them to add it under "Who's on this trip".`
+      );
+      return;
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? window.location.origin;
 
     const upiUrl = buildUpiRedirectUrl(baseUrl, {
-      pa: toMember.upi_id ?? `${getName(settlement.to).toLowerCase().replace(" ", ".")}@upi`,
+      pa: toMember.upi_id,
       pn: getName(settlement.to),
       am: settlement.amount,
       tn: `TripSync settlement`,

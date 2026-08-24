@@ -47,7 +47,7 @@ export async function GET(
 
   const [{ data: expenses }, { data: members }] = await Promise.all([
     admin.from("expenses").select("*, expense_splits(*)").eq("trip_id", trip.id).order("created_at"),
-    admin.from("trip_members").select("user_id, role").eq("trip_id", trip.id),
+    admin.from("trip_members").select("user_id, role, display_name, avatar_url, upi_id").eq("trip_id", trip.id),
   ]);
 
   return NextResponse.json({

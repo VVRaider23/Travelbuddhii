@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { useTripStore } from "@/store/tripStore";
+import { StepFooter } from "@/components/layout/StepFooter";
 
 /* ── constants ── */
 
@@ -213,9 +214,12 @@ export default function BudgetPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  /* save */
-  async function handleSave() {
-    if (vibes.length === 0) return;
+  /* save — returns whether the save succeeded, so StepFooter knows to navigate */
+  async function handleSave(): Promise<boolean> {
+    if (vibes.length === 0) {
+      toast.error("Pick at least one vibe first");
+      return false;
+    }
     setSaving(true);
     const budget_min = customMin;
     const budget_max = customMax;
@@ -228,13 +232,14 @@ export default function BudgetPage() {
     setSaving(false);
     if (!res.ok) {
       toast.error(body.error ?? "Could not save. Try again.");
-      return;
+      return false;
     }
     setSaved(true);
     setIsDirty(false);
     toast.success("Vibe locked in!");
     const fresh = await fetch(`/api/trips/${slug}/budget`).then((r) => r.json());
     setData(fresh);
+    return true;
   }
 
   /* tier tap */
@@ -708,6 +713,21 @@ export default function BudgetPage() {
           )}
         </button>
       </div>
+
+      <StepFooter
+        slug={slug}
+        current="budget"
+        workState={
+          saving
+            ? "saving"
+            : isDirty
+              ? "dirty"
+              : !data?.myBudget && vibes.length === 0
+                ? "empty"
+                : "saved"
+        }
+        onSave={handleSave}
+      />
     </div>
   );
 }

@@ -5,8 +5,11 @@ import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { AddExpenseDrawer } from "@/components/expenses/AddExpenseDrawer";
 import { SettlementList } from "@/components/expenses/SettlementList";
+import { MemberRoster } from "@/components/trip/MemberRoster";
+import { StepFooter } from "@/components/layout/StepFooter";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { computeBalances, computeSettlements } from "@/lib/settlement";
+import { memberDisplayName, fallbackName } from "@/lib/memberProfile";
 
 interface ExpenseSplit {
   id: string;
@@ -28,8 +31,9 @@ interface Expense {
 interface Member {
   user_id: string;
   role: string;
-  display_name?: string;
-  upi_id?: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  upi_id?: string | null;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -89,7 +93,7 @@ export default function ExpensesPage() {
 
   function getMemberName(userId: string): string {
     const m = members.find((m) => m.user_id === userId);
-    return m?.display_name ?? `User ${userId.slice(0, 6)}`;
+    return m ? memberDisplayName(m) : fallbackName(userId);
   }
 
   if (loading) return <PageSkeleton />;
@@ -198,6 +202,14 @@ export default function ExpensesPage() {
           )
         ) : (
           <div className="flex flex-col gap-4">
+            {/* Names and UPI IDs live here: settlements are unusable without them */}
+            <MemberRoster
+              slug={slug}
+              members={members}
+              currentUserId={currentUserId}
+              onUpdated={loadData}
+            />
+
             {/* Summary */}
             <div
               className="rounded-2xl p-4"
@@ -233,10 +245,15 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      {/* FAB */}
-      <div className="fixed bottom-20 right-4 z-30">
+      {/* FAB — sits above the sticky step footer */}
+      <div
+        className="fixed right-4 z-30"
+        style={{ bottom: "calc(76px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <AddExpenseDrawer slug={slug} members={members} onAdded={loadData} />
       </div>
+
+      <StepFooter slug={slug} current="expenses" />
     </div>
   );
 }

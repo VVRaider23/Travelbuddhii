@@ -12,6 +12,7 @@ import { BestDatesSummary } from "@/components/dates/BestDatesSummary";
 import { DateLockButton } from "@/components/dates/DateLockButton";
 import { SetDateWindow } from "@/components/dates/SetDateWindow";
 import { DatesLoader } from "@/components/dates/DatesLoader";
+import { StepFooter } from "@/components/layout/StepFooter";
 
 interface VoteRow {
   user_id: string;
@@ -229,7 +230,8 @@ export default function DatesPage() {
     setMyDates(new Set());
   }
 
-  async function handleSave() {
+  /* returns whether the save succeeded, so StepFooter knows to navigate */
+  async function handleSave(): Promise<boolean> {
     setSaving(true);
     const res = await fetch(`/api/trips/${slug}/dates`, {
       method: "POST",
@@ -239,10 +241,11 @@ export default function DatesPage() {
     setSaving(false);
     if (!res.ok) {
       toast.error("Could not save. Try again.");
-      return;
+      return false;
     }
     setSaved(true);
     toast.success("Availability saved!");
+    return true;
   }
 
   async function handleToggleAnonymous() {
@@ -495,6 +498,21 @@ export default function DatesPage() {
           )}
         </div>
       )}
+
+      <StepFooter
+        slug={slug}
+        current="dates"
+        workState={
+          saving
+            ? "saving"
+            : saved
+              ? "saved"
+              : myDates.size === 0
+                ? "empty"
+                : "dirty"
+        }
+        onSave={handleSave}
+      />
     </div>
   );
 }

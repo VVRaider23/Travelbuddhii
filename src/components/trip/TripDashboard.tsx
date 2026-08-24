@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useTripStore } from "@/store/tripStore";
 import { MemberAvatarRow } from "@/components/shared/MemberAvatarRow";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { TRIP_STEPS } from "@/lib/tripProgress";
 import type { TripStatus } from "@/types/database";
 
 interface TripData {
@@ -26,73 +27,32 @@ interface Props {
   currentUserId: string;
 }
 
-const STAGES: { key: TripStatus; label: string; icon: string; color: string }[] = [
-  { key: "gathering_inputs", label: "Gathering", icon: "📩", color: "#FF6B35" },
-  { key: "voting",           label: "Voting",    icon: "🗳️", color: "#8B5CF6" },
-  { key: "planning",         label: "Planning",  icon: "✨", color: "#00A8A8" },
-  { key: "active",           label: "Active",    icon: "🚀", color: "#25D366" },
-];
-
-const STEPS = [
-  { path: "dates",        icon: "📅", title: "Pick Dates",         desc: "Vote on when everyone's free",   color: "#FF6B35" },
-  { path: "budget",       icon: "💰", title: "Budget + Vibe",      desc: "Set your range (stays private)", color: "#00A8A8" },
-  { path: "destinations", icon: "🗺️", title: "Choose Destination", desc: "AI suggests, group votes",       color: "#8B5CF6" },
-  { path: "itinerary",    icon: "✈️", title: "Build Itinerary",    desc: "Day-by-day AI plan with map",    color: "#10B981" },
-  { path: "expenses",     icon: "💸", title: "Track Expenses",     desc: "Split and settle via UPI",       color: "#EC4899" },
-];
-
-const stageIndex: Record<TripStatus, number> = {
-  gathering_inputs: 0,
-  voting: 1,
-  planning: 2,
-  active: 3,
-  completed: 3,
-};
-
-type StepStatus = "done" | "current" | "upcoming" | "locked";
-
-function getStepStatus(path: string, trip: TripData): StepStatus {
-  const s = trip.status;
-  switch (path) {
-    case "dates":
-      if (trip.confirmed_start) return "done";
-      return s === "gathering_inputs" ? "current" : "upcoming";
-    case "budget":
-      if (trip.budget_min) return "done";
-      return s === "gathering_inputs" ? "upcoming" : "current";
-    case "destinations":
-      if (trip.destination) return "done";
-      if (s === "gathering_inputs" || s === "voting") return "upcoming";
-      return "current";
-    case "itinerary":
-      if (!trip.destination) return "locked";
-      if (s === "active" || s === "completed") return "done";
-      if (s === "planning") return "current";
-      return "upcoming";
-    case "expenses":
-      if (s === "active" || s === "completed") return "current";
-      return "locked";
-    default:
-      return "upcoming";
-  }
-}
-
-function getEmotionalMessage(memberCount: number, stage: number) {
-  if (stage === 0) {
+/**
+ * Keyed off which step the group is on, not trips.status: nothing in the app
+ * ever advances the status past "planning", so a status-driven message would
+ * never reach its later states.
+ */
+function getEmotionalMessage(memberCount: number, currentStepIndex: number) {
+  if (currentStepIndex === 0) {
     if (memberCount <= 1) return { emoji: "👀", text: "Just you so far — invite the squad!", color: "#FF6B35", anim: "animate-waveHand" };
     if (memberCount <= 3) return { emoji: "🔥", text: `${memberCount} friends in, keep sharing!`, color: "#F59E0B", anim: "" };
     if (memberCount <= 5) return { emoji: "🙌", text: `${memberCount} friends ready, almost there!`, color: "#00A8A8", anim: "" };
     return { emoji: "🚀", text: `${memberCount} friends locked in, let's gooo!`, color: "#25D366", anim: "" };
   }
-  if (stage === 1) return { emoji: "🗳️", text: "Votes are coming in...", color: "#8B5CF6", anim: "" };
-  if (stage === 2) return { emoji: "✨", text: "AI is cooking your plan...", color: "#00A8A8", anim: "" };
+  if (currentStepIndex === 1) return { emoji: "💰", text: "Collecting everyone's budget...", color: "#00A8A8", anim: "" };
+  if (currentStepIndex === 2) return { emoji: "🗳️", text: "Votes are coming in...", color: "#8B5CF6", anim: "" };
+  if (currentStepIndex === 3) return { emoji: "✨", text: "Time to build the plan...", color: "#10B981", anim: "" };
   return { emoji: "🎉", text: "Trip is live! Have fun!", color: "#25D366", anim: "" };
 }
 
 export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
   const storeMembers = useTripStore((s) => s.members);
+  const stepStates = useTripStore((s) => s.stepStates);
   const displayMembers = storeMembers.length > 0 ? storeMembers : members;
-  const currentStage = stageIndex[trip.status];
+  const currentStepIndex = Math.max(
+    0,
+    TRIP_STEPS.findIndex((s) => stepStates[s.path] === "current")
+  );
   const [copied, setCopied] = useState(false);
   const [hoveredStep, setHoveredStep] = useState(-1);
   const [shareUrl, setShareUrl] = useState(`/t/${slug}`);
@@ -125,7 +85,7 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
       ? `${new Date(trip.confirmed_start).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ${new Date(trip.confirmed_end).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
       : null;
 
-  const emotional = getEmotionalMessage(displayMembers.length, currentStage);
+  const emotional = getEmotionalMessage(displayMembers.length, currentStepIndex);
 
   const compactStats = [
     { icon: "👥", label: "Members", value: `${displayMembers.length}`, hasData: true },
@@ -169,43 +129,8 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
           <StatusBadge status={trip.status} />
         </div>
 
-        {/* Stage progress bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {STAGES.map((stage, i) => {
-            const done = i < currentStage;
-            const current = i === currentStage;
-            return (
-              <div key={stage.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                <div
-                  className={current ? "animate-progressPulse" : ""}
-                  style={{
-                    width: "100%", height: 5, borderRadius: 100,
-                    background: done
-                      ? "linear-gradient(90deg, #25D366, #2EE07A)"
-                      : current
-                        ? `linear-gradient(90deg, ${stage.color}, ${stage.color}90)`
-                        : "rgba(0,0,0,0.06)",
-                  }}
-                />
-                <div
-                  style={{
-                    display: "flex", alignItems: "center", gap: 3,
-                    fontSize: 10, fontWeight: current ? 600 : 500,
-                    color: current ? stage.color : done ? "#25D366" : "var(--tb-light)",
-                  }}
-                >
-                  {done && (
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="#25D366">
-                      <path d="M8 0a8 8 0 110 16A8 8 0 018 0zm3.41 5.29a.75.75 0 00-1.06-1.06L7 7.59 5.65 6.24a.75.75 0 10-1.06 1.06l1.88 1.88a.75.75 0 001.06 0l3.88-3.89z"/>
-                    </svg>
-                  )}
-                  {current && <span style={{ fontSize: 10 }}>{stage.icon}</span>}
-                  {stage.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* The five-step tracker lives in the trip layout now, so it stays
+            visible on every page instead of only here. */}
 
         {/* Emotional status */}
         <div
@@ -370,41 +295,40 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
             <span style={{ fontSize: 13 }}>🗺️</span> Your trip journey
           </h2>
 
-          {STEPS.map((step, i) => {
-            const stepStatus: StepStatus = getStepStatus(step.path, trip);
+          {TRIP_STEPS.map((step, i) => {
+            // Every step stays reachable. Pages own their empty states, and a
+            // dead-end link is how people conclude the app is broken.
+            const stepStatus = stepStates[step.path] ?? "upcoming";
             const isCurrent = stepStatus === "current";
-            const isLocked = stepStatus === "locked";
             const isDone = stepStatus === "done";
             const isHovered = hoveredStep === i;
 
             return (
               <Link
                 key={step.path}
-                href={isLocked ? "#" : `/t/${slug}/${step.path}`}
+                href={`/t/${slug}/${step.path}`}
                 onMouseEnter={() => setHoveredStep(i)}
                 onMouseLeave={() => setHoveredStep(-1)}
-                onClick={(e) => isLocked && e.preventDefault()}
                 style={{
                   display: "flex", alignItems: "center", gap: 12,
                   padding: isCurrent ? "14px 14px" : "11px 14px",
                   borderRadius: isCurrent ? 18 : 14,
                   background: isCurrent
                     ? "linear-gradient(145deg, #fff 0%, #FEFCF9 100%)"
-                    : isHovered && !isLocked
+                    : isHovered
                       ? "rgba(255,255,255,0.7)"
                       : "transparent",
                   border: isCurrent ? `1.5px solid ${step.color}25` : "1.5px solid transparent",
                   boxShadow: isCurrent ? `0 4px 16px ${step.color}08` : "none",
-                  opacity: isLocked ? 0.4 : 1,
-                  cursor: isLocked ? "default" : "pointer",
-                  transform: isHovered && !isLocked ? "translateX(3px)" : "translateX(0)",
+                  cursor: "pointer",
+                  transform: isHovered ? "translateX(3px)" : "translateX(0)",
                   transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
                   position: "relative",
                   textDecoration: "none",
                 }}
               >
                 {/* Timeline connector */}
-                {i < STEPS.length - 1 && (
+                {i < TRIP_STEPS.length - 1 && (
                   <div style={{
                     position: "absolute",
                     left: 31, top: isCurrent ? 48 : 40,
@@ -425,7 +349,7 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
                       : "rgba(0,0,0,0.025)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: isCurrent ? 20 : 17,
-                  transform: isHovered && !isLocked ? "scale(1.08)" : "scale(1)",
+                  transform: isHovered ? "scale(1.08)" : "scale(1)",
                   transition: "all 0.2s ease",
                   position: "relative",
                 }}>
@@ -450,7 +374,7 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
                     <p style={{
                       fontSize: isCurrent ? 14 : 13,
                       fontWeight: isCurrent ? 700 : 600,
-                      color: isLocked ? "var(--tb-light)" : "var(--tb-text)",
+                      color: "var(--tb-text)",
                     }}>{step.title}</p>
                     {isCurrent && (
                       <span
@@ -471,9 +395,7 @@ export function TripDashboard({ slug, trip, members, currentUserId }: Props) {
 
                 {/* Right side */}
                 <div style={{ flexShrink: 0 }}>
-                  {isLocked ? (
-                    <span style={{ fontSize: 13, color: "var(--tb-light)" }}>🔒</span>
-                  ) : isDone ? (
+                  {isDone ? (
                     <span style={{ fontSize: 11, fontWeight: 600, color: "#25D366" }}>✓ Done</span>
                   ) : isCurrent ? (
                     <span style={{

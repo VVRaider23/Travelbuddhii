@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Drawer } from "vaul";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { memberDisplayName } from "@/lib/memberProfile";
 
 const CATEGORIES = [
   { id: "food", label: "Food", emoji: "🍽️" },
@@ -17,7 +18,7 @@ const CATEGORIES = [
 interface Member {
   user_id: string;
   role: string;
-  display_name?: string;
+  display_name?: string | null;
 }
 
 interface Props {
@@ -256,7 +257,7 @@ export function AddExpenseDrawer({ slug, members, onAdded }: Props) {
                           )}
                         </div>
                         <span className="text-sm" style={{ color: "var(--tb-text)" }}>
-                          {m.display_name ?? `Member ${m.user_id.slice(0, 6)}`}
+                          {memberDisplayName(m)}
                         </span>
                         {selectedMembers.size > 0 && (
                           <span className="text-xs ml-auto" style={{ color: "var(--tb-muted)" }}>
