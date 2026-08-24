@@ -53,6 +53,8 @@ export default function DatesPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [myDates, setMyDates] = useState<Set<string>>(new Set());
   const [pulsingDates, setPulsingDates] = useState<Set<string>>(new Set());
+  const [unlocking, setUnlocking] = useState(false);
+  const [confirmUnlock, setConfirmUnlock] = useState(false);
 
   const supabase = createClient();
   const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -201,12 +203,41 @@ export default function DatesPage() {
     });
     setSaving(false);
     if (!res.ok) {
-      toast.error("Could not save. Try again.");
+      // 409 means the organizer locked the dates while this page was open.
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Could not save. Try again.");
       return false;
     }
     setSaved(true);
     toast.success("Availability saved!");
     return true;
+  }
+
+  async function handleUnlock() {
+    setUnlocking(true);
+    const res = await fetch(`/api/trips/${slug}/dates/lock`, { method: "DELETE" });
+    setUnlocking(false);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      toast.error(body?.error ?? "Could not unlock. Try again.");
+      return;
+    }
+
+    setTrip((prev) =>
+      prev ? { ...prev, confirmed_start: null, confirmed_end: null, status: "gathering_inputs" } : prev
+    );
+    setConfirmUnlock(false);
+    // Their own picks come back from the votes already loaded, which the lock
+    // was only hiding rather than deleting.
+    setMyDates(
+      new Set(
+        allVotes
+          .filter((v) => v.user_id === currentUserId && v.is_available)
+          .map((v) => v.date)
+      )
+    );
+    toast.success("Dates unlocked. Everyone can vote again.");
   }
 
   async function handleToggleAnonymous() {
@@ -285,6 +316,77 @@ export default function DatesPage() {
             </span>
           )}
         </div>
+
+        {/* Locked notice, and the way back out of it */}
+        {isLocked && (
+          <div style={{
+            padding: "12px 14px", borderRadius: 14,
+            background: "rgba(37,211,102,0.05)",
+            border: "1px solid rgba(37,211,102,0.15)",
+            display: "flex", flexDirection: "column", gap: 10,
+          }}>
+            <p style={{ fontSize: 12.5, color: "var(--tb-text)", lineHeight: 1.5, margin: 0 }}>
+              {trip.confirmed_start && trip.confirmed_end && (
+                <strong>
+                  {format(parseISO(trip.confirmed_start), "d MMM")} to{" "}
+                  {format(parseISO(trip.confirmed_end), "d MMM yyyy")}
+                </strong>
+              )}
+              {userRole === "organizer"
+                ? ". Nobody can change their dates while this is locked."
+                : ". The organizer locked these dates, so voting is closed."}
+            </p>
+
+            {userRole === "organizer" && !confirmUnlock && (
+              <button
+                onClick={() => setConfirmUnlock(true)}
+                style={{
+                  alignSelf: "flex-start",
+                  fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  padding: "7px 14px", borderRadius: 10,
+                  background: "#fff", border: "1px solid rgba(0,0,0,0.1)",
+                  color: "var(--tb-text)", fontFamily: "var(--font-sans)",
+                }}
+              >
+                Unlock dates
+              </button>
+            )}
+
+            {userRole === "organizer" && confirmUnlock && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ fontSize: 12, color: "var(--tb-muted)", margin: 0, lineHeight: 1.5 }}>
+                  This reopens voting for everyone and clears the confirmed dates.
+                  Everyone&apos;s existing picks are kept.
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setConfirmUnlock(false)}
+                    style={{
+                      flex: 1, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                      padding: "9px 0", borderRadius: 10,
+                      background: "transparent", border: "1px solid rgba(0,0,0,0.08)",
+                      color: "var(--tb-muted)", fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUnlock}
+                    disabled={unlocking}
+                    style={{
+                      flex: 1, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      padding: "9px 0", borderRadius: 10, border: "none",
+                      background: "var(--tb-orange)", color: "#fff",
+                      opacity: unlocking ? 0.5 : 1, fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    {unlocking ? "Unlocking..." : "Yes, unlock"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Anonymous toggle */}
         {userRole === "organizer" && !isLocked && (

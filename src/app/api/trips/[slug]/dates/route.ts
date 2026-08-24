@@ -92,7 +92,7 @@ export async function POST(
 
   const { data: trip } = await admin
     .from("trips")
-    .select("id")
+    .select("id, confirmed_start")
     .eq("slug", slug)
     .single();
 
@@ -107,6 +107,16 @@ export async function POST(
     .maybeSingle();
 
   if (!membership) return NextResponse.json({ error: "Not a member" }, { status: 403 });
+
+  // The organizer is warned that locking stops everyone else changing their
+  // dates. Until now that was only true in the browser: this endpoint accepted
+  // votes just fine after a lock, so the warning was a promise nothing kept.
+  if (trip.confirmed_start) {
+    return NextResponse.json(
+      { error: "Dates are locked for this trip. Ask the organizer to unlock them." },
+      { status: 409 }
+    );
+  }
 
   // Delete old votes, insert new ones
   await admin.from("date_votes").delete().eq("trip_id", trip.id).eq("user_id", user.id);

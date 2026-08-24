@@ -152,7 +152,8 @@ export function DateLockButton({
             Lock {selected ? formatRange(selected) : ""}?
           </p>
           <p className="text-[12px] text-center" style={{ color: "var(--tb-muted)" }}>
-            This will notify everyone and advance to destination voting.
+            Everyone stops being able to change their dates once this is locked.
+            Only you can unlock it. The trip then advances to destination voting.
           </p>
           <div className="flex gap-2">
             <button
